@@ -93,6 +93,8 @@ func main() {
 			// Optional OTP
 			authGroup.POST("/request-otp", authHandler.RequestOTP)
 			authGroup.POST("/verify-otp", authHandler.VerifyOTP)
+			authGroup.POST("/refresh", authHandler.Refresh)
+			authGroup.POST("/logout", authHandler.Logout)
 			// Basic Auth
 			authGroup.POST("/signup", authBasicHandler.Signup)
 			authGroup.POST("/signin", authBasicHandler.Signin)

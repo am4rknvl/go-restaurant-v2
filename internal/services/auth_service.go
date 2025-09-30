@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"time"
 
+	"restaurant-system/internal/auth"
+	"restaurant-system/internal/config"
 	"restaurant-system/internal/database"
 	"restaurant-system/internal/models"
 
@@ -81,20 +83,63 @@ func (s *AuthService) VerifyOTP(req *models.VerifyOTPRequest) (string, error) {
 		}
 	}
 
-	// Create session
+	// Create session and generate access + refresh tokens
+	// refresh token stored in sessions table
 	sessionID := uuid.New().String()
-	token := uuid.New().String()
-	expiresAt := time.Now().Add(24 * time.Hour)
+	accessToken, refreshToken, err := auth.GenerateAccessAndRefresh(account.ID, "customer")
+	if err != nil {
+		return "", err
+	}
+
+	refreshExpires := time.Now().Add(24 * time.Hour)
+	if h := config.Auth().RefreshTokenHours; h > 0 {
+		refreshExpires = time.Now().Add(time.Duration(h) * time.Hour)
+	}
 
 	_, err = s.db.Conn().Exec(
-		"INSERT INTO sessions (id, account_id, token, device_id, expires_at, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
-		sessionID, account.ID, token, req.DeviceID, expiresAt, time.Now(),
+		"INSERT INTO sessions (id, account_id, token, device_id, refresh_token, expires_at, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+		sessionID, account.ID, accessToken, req.DeviceID, refreshToken, refreshExpires, time.Now(),
 	)
 	if err != nil {
 		return "", err
 	}
 
-	return token, nil
+	// return a JSON-style compound token string (client should store both separately)
+	// but our handler will return structured JSON instead of this string; keep compatibility
+	return accessToken + "::" + refreshToken, nil
+}
+
+// RefreshTokens validates a refresh token, issues new access+refresh and stores rotated refresh token
+func (s *AuthService) RefreshTokens(refreshToken string, deviceID string) (newAccess string, newRefresh string, err error) {
+	// Find session with refresh token
+	var sessionID string
+	var accountID string
+	err = s.db.Conn().QueryRow("SELECT id, account_id FROM sessions WHERE refresh_token = $1 AND device_id = $2 AND expires_at > NOW()", refreshToken, deviceID).Scan(&sessionID, &accountID)
+	if err != nil {
+		return "", "", err
+	}
+
+	newAccess, newRefresh, err = auth.GenerateAccessAndRefresh(accountID, "customer")
+	if err != nil {
+		return "", "", err
+	}
+
+	refreshExpires := time.Now().Add(24 * time.Hour)
+	if h := config.Auth().RefreshTokenHours; h > 0 {
+		refreshExpires = time.Now().Add(time.Duration(h) * time.Hour)
+	}
+
+	_, err = s.db.Conn().Exec("UPDATE sessions SET token = $1, refresh_token = $2, expires_at = $3, updated_at = $4 WHERE id = $5", newAccess, newRefresh, refreshExpires, time.Now(), sessionID)
+	if err != nil {
+		return "", "", err
+	}
+	return newAccess, newRefresh, nil
+}
+
+// Logout invalidates a refresh token (delete session)
+func (s *AuthService) Logout(refreshToken string, deviceID string) error {
+	_, err := s.db.Conn().Exec("DELETE FROM sessions WHERE refresh_token = $1 AND device_id = $2", refreshToken, deviceID)
+	return err
 }
 
 func generateOTPCode(length int) (string, error) {

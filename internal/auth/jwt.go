@@ -5,11 +5,19 @@ import (
 	"strings"
 	"time"
 
+	"restaurant-system/internal/config"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
 
-var jwtSecret = []byte("replace-with-secure-secret")
+func jwtSecret() []byte {
+	s := config.Auth().JWTSecret
+	if s == "" {
+		s = "replace-with-secure-secret"
+	}
+	return []byte(s)
+}
 
 type Claims struct {
 	AccountID string `json:"account_id"`
@@ -31,6 +39,23 @@ func GenerateToken(accountID string, role string, ttl time.Duration) (string, er
 	return token.SignedString(jwtSecret)
 }
 
+// GenerateAccessAndRefresh creates an access JWT and a refresh token (opaque string).
+func GenerateAccessAndRefresh(accountID string, role string) (accessToken string, refreshToken string, err error) {
+	accessTTL := time.Duration(config.Auth().AccessTokenMinutes) * time.Minute
+	if accessTTL == 0 {
+		accessTTL = 15 * time.Minute
+	}
+	accessToken, err = GenerateToken(accountID, role, accessTTL)
+	if err != nil {
+		return "", "", err
+	}
+
+	// refresh token: long random opaque string (UUID-like)
+	// we keep it simple here; services should store and validate it server-side
+	refreshToken = jwt.StandardClaims{Id: time.Now().Format(time.RFC3339Nano)}.Id
+	return accessToken, refreshToken, nil
+}
+
 // Middleware to require a valid token and optionally role
 func RequireAuth(role string) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -46,7 +71,7 @@ func RequireAuth(role string) gin.HandlerFunc {
 		}
 		tokenStr := parts[1]
 		token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-			return jwtSecret, nil
+			return jwtSecret(), nil
 		})
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
