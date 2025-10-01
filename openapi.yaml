@@ -1,0 +1,399 @@
+openapi: 3.0.3
+info:
+  title: Restaurant Platform Enterprise APIs
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /accounts/{id}:
+    get:
+      summary: Get account
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: Update account
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AccountUpdate' }
+      responses:
+        '200': { description: OK }
+  /accounts/{id}/roles:
+    post:
+      summary: Assign role
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role: { type: string, enum: [customer, waiter, chef, cashier, manager, admin] }
+                restaurant_id: { type: string }
+              required: [role]
+      responses:
+        '204': { description: No Content }
+  /accounts/{id}/roles/{role}:
+    delete:
+      summary: Remove role
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: path
+          name: role
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: No Content }
+  /inventory:
+    get:
+      summary: List inventory by restaurant
+      parameters:
+        - in: query
+          name: restaurant_id
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create inventory item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InventoryItem' }
+      responses:
+        '201': { description: Created }
+  /inventory/{id}:
+    put:
+      summary: Update inventory item
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InventoryItem' }
+      responses:
+        '200': { description: OK }
+  /inventory/{id}/adjust:
+    patch:
+      summary: Adjust inventory quantity
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                delta: { type: number }
+                reason: { type: string }
+              required: [delta]
+      responses:
+        '204': { description: No Content }
+  /tables/{table_id}/assign-waiter:
+    post:
+      summary: Assign waiter to table
+      parameters:
+        - in: path
+          name: table_id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AssignWaiter' }
+      responses:
+        '204': { description: No Content }
+  /orders/{order_id}/assign-chef:
+    post:
+      summary: Assign chef to order
+      parameters:
+        - in: path
+          name: order_id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AssignChef' }
+      responses:
+        '204': { description: No Content }
+  /staff/assignments:
+    get:
+      summary: List staff assignments
+      parameters:
+        - in: query
+          name: restaurant_id
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /orders/{id}/split:
+    post:
+      summary: Split order
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /orders/{id}/merge:
+    post:
+      summary: Merge orders into target
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /payments/{id}/tip:
+    post:
+      summary: Add tip to a payment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: number }
+              required: [amount]
+      responses:
+        '200': { description: OK }
+  /discounts:
+    post:
+      summary: Create discount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Discount' }
+      responses:
+        '201': { description: Created }
+  /discounts/apply:
+    post:
+      summary: Apply discount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_id: { type: string }
+                order_id: { type: string }
+                code: { type: string }
+              required: [code]
+      responses:
+        '200': { description: OK }
+  /accounts/{id}/loyalty:
+    get:
+      summary: Get loyalty account
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /accounts/{id}/loyalty/earn:
+    post:
+      summary: Earn loyalty points
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                points: { type: integer }
+              required: [points]
+      responses:
+        '204': { description: No Content }
+  /reports/sales:
+    get:
+      summary: Sales report
+      parameters:
+        - in: query
+          name: range
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /reports/popular-items:
+    get:
+      summary: Popular items
+      parameters:
+        - in: query
+          name: range
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /reports/customers/top:
+    get:
+      summary: Top customers
+      responses:
+        '200': { description: OK }
+  /restaurants:
+    get:
+      summary: List restaurants
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create restaurant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Restaurant' }
+      responses:
+        '201': { description: Created }
+  /restaurants/{id}:
+    put:
+      summary: Update restaurant
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Restaurant' }
+      responses:
+        '200': { description: OK }
+  /tables/{id}/state:
+    patch:
+      summary: Update table state
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                state: { type: string, enum: [available, reserved, occupied, needs_cleaning] }
+              required: [state]
+      responses:
+        '204': { description: No Content }
+  /waitlist:
+    get:
+      summary: List waitlist
+      parameters:
+        - in: query
+          name: restaurant_id
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Join waitlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                restaurant_id: { type: string }
+                name: { type: string }
+                phone: { type: string }
+                party_size: { type: integer }
+              required: [restaurant_id, name, party_size]
+      responses:
+        '201': { description: Created }
+components:
+  schemas:
+    AccountUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        phone: { type: string }
+    InventoryItem:
+      type: object
+      properties:
+        id: { type: string }
+        restaurant_id: { type: string }
+        sku: { type: string }
+        name: { type: string }
+        qty: { type: number }
+        unit: { type: string }
+        reorder_level: { type: number }
+        cost: { type: number }
+      required: [restaurant_id, sku, name]
+    AssignWaiter:
+      type: object
+      properties:
+        waiter_id: { type: string }
+        restaurant_id: { type: string }
+      required: [waiter_id]
+    AssignChef:
+      type: object
+      properties:
+        chef_id: { type: string }
+        restaurant_id: { type: string }
+      required: [chef_id]
+    Discount:
+      type: object
+      properties:
+        code: { type: string }
+        type: { type: string, enum: [percent, fixed] }
+        value: { type: number }
+        restaurant_id: { type: string }
+        valid_from: { type: string, format: date-time }
+        valid_to: { type: string, format: date-time }
+        usage_limit: { type: integer }
+        per_user_limit: { type: integer }
+      required: [code, type, value]
+    Restaurant:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        timezone: { type: string }
+        currency: { type: string }
+        tax_rate: { type: number }
+

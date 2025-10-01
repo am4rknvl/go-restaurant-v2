@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: restaurant
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+  app:
+    build: .
+    environment:
+      PG_URL: postgres://postgres:postgres@db:5432/restaurant?sslmode=disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - redis
+volumes:
+  db_data: {}
+

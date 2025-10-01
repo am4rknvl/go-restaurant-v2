@@ -1,4 +1,25 @@
 # Restaurant System - Backend
+## Deployment
+
+### Local
+```
+docker-compose up -d --build
+go run .
+```
+
+### Staging
+```
+docker build -t your-registry/restaurant-system:$(git rev-parse --short HEAD) .
+docker push your-registry/restaurant-system:$(git rev-parse --short HEAD)
+kubectl apply -f k8s/
+```
+
+### Production
+```
+kubectl set image deployment/restaurant-app app=your-registry/restaurant-system:$(git rev-parse --short HEAD)
+kubectl rollout status deployment/restaurant-app
+```
+# Restaurant System - Backend
 
 This repository contains a Go (Gin) backend for a restaurant table ordering platform. This patch added several endpoints and WebSocket support. Apply migrations in `migrations.sql` to your Postgres database.
 
