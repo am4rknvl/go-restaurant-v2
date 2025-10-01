@@ -90,3 +90,47 @@ func RequireAuth(role string) gin.HandlerFunc {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token claims"})
 	}
 }
+
+// RequireAnyRole allows any of the provided roles; if no roles provided, just requires auth.
+func RequireAnyRole(roles ...string) gin.HandlerFunc {
+	allowed := map[string]struct{}{}
+	for _, r := range roles {
+		if r != "" {
+			allowed[r] = struct{}{}
+		}
+	}
+	return func(c *gin.Context) {
+		h := c.GetHeader("Authorization")
+		if h == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing authorization header"})
+			return
+		}
+		parts := strings.Fields(h)
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header"})
+			return
+		}
+		tokenStr := parts[1]
+		token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return jwtSecret(), nil
+		})
+		if err != nil || !token.Valid {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			return
+		}
+		claims, ok := token.Claims.(*Claims)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token claims"})
+			return
+		}
+		if len(allowed) > 0 {
+			if _, ok := allowed[claims.Role]; !ok {
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "insufficient role"})
+				return
+			}
+		}
+		c.Set("account_id", claims.AccountID)
+		c.Set("role", claims.Role)
+		c.Next()
+	}
+}

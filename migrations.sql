@@ -110,3 +110,76 @@ CREATE TABLE IF NOT EXISTS refunds (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+-- Branches for multi-restaurant support
+CREATE TABLE IF NOT EXISTS branches (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  timezone TEXT,
+  currency TEXT,
+  tax_rate NUMERIC,
+  address TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Add branch_id to key entities if not exists
+ALTER TABLE IF EXISTS tables ADD COLUMN IF NOT EXISTS branch_id TEXT REFERENCES branches(id);
+ALTER TABLE IF EXISTS menu_items ADD COLUMN IF NOT EXISTS branch_id TEXT REFERENCES branches(id);
+ALTER TABLE IF EXISTS reservations ADD COLUMN IF NOT EXISTS branch_id TEXT REFERENCES branches(id);
+ALTER TABLE IF EXISTS orders ADD COLUMN IF NOT EXISTS branch_id TEXT REFERENCES branches(id);
+
+-- Table state management
+ALTER TABLE IF EXISTS tables ADD COLUMN IF NOT EXISTS state TEXT DEFAULT 'available';
+
+-- Waitlist per branch
+CREATE TABLE IF NOT EXISTS waitlist (
+  id TEXT PRIMARY KEY,
+  branch_id TEXT NOT NULL REFERENCES branches(id),
+  name TEXT NOT NULL,
+  phone TEXT,
+  party_size INT NOT NULL DEFAULT 1,
+  status TEXT NOT NULL DEFAULT 'waiting', -- waiting | notified | seated | expired
+  position INT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Inventory per branch
+CREATE TABLE IF NOT EXISTS inventory_items (
+  id TEXT PRIMARY KEY,
+  branch_id TEXT NOT NULL REFERENCES branches(id),
+  sku TEXT NOT NULL,
+  name TEXT NOT NULL,
+  qty NUMERIC NOT NULL DEFAULT 0,
+  unit TEXT,
+  reorder_level NUMERIC DEFAULT 0,
+  cost NUMERIC,
+  UNIQUE (branch_id, sku)
+);
+
+CREATE TABLE IF NOT EXISTS inventory_adjustments (
+  id TEXT PRIMARY KEY,
+  item_id TEXT NOT NULL REFERENCES inventory_items(id),
+  delta NUMERIC NOT NULL,
+  reason TEXT,
+  user_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Recipes link menu items to ingredients
+CREATE TABLE IF NOT EXISTS recipes (
+  id TEXT PRIMARY KEY,
+  branch_id TEXT NOT NULL REFERENCES branches(id),
+  menu_item_id TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS recipe_components (
+  id TEXT PRIMARY KEY,
+  recipe_id TEXT NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+  sku TEXT NOT NULL,
+  qty NUMERIC NOT NULL,
+  unit TEXT
+);

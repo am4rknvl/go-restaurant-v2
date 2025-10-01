@@ -9,6 +9,8 @@ import (
 	"restaurant-system/internal/services"
 	"restaurant-system/internal/websocket"
 
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -43,6 +45,13 @@ func main() {
 	hub := websocket.NewHub()
 	go hub.Run()
 
+	// Initialize GORM (for menu management)
+	pgURL := os.Getenv("PG_URL")
+	gdb, gerr := database.NewGorm(pgURL)
+	if gerr != nil {
+		log.Fatal("Failed to init GORM:", gerr)
+	}
+
 	// Initialize handlers
 	orderAPI := handlers.NewOrderAPI(orderService, hub)
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
@@ -59,6 +68,10 @@ func main() {
 	kitchenAPI := handlers.NewKitchenAPI(orderService)
 	reservationsAPI := handlers.NewReservationsAPI(reservationService)
 	notificationsAPI := handlers.NewNotificationsAPI(notificationService)
+	// New grouped APIs
+	adminAPI := handlers.NewAdminAPI()
+	staffAPI := handlers.NewStaffAPI()
+	customerAPI := handlers.NewCustomerAPI()
 
 	// Setup router
 	router := gin.Default()
@@ -113,8 +126,34 @@ func main() {
 			orders.PUT("/:id/eta", orderAPI.SetETA)
 		}
 
-		// Menu / categories
+		// Menu (QR view remains)
 		api.GET("/restaurant/:restaurant_id/table/:table_id/menu", menuAPI.GetQRMenu)
+		// Menu management (GORM-backed)
+		mm := handlers.NewMenuManagementAPI(gdb, hub)
+		menuGroup := api.Group("/menu")
+		{
+			// categories
+			menuGroup.POST("/categories", handlers.RequireAdminOrManager(), mm.CreateCategory)
+			menuGroup.GET("/categories/:id", mm.GetCategory)
+			menuGroup.GET("/categories", mm.ListCategories)
+			menuGroup.PUT("/categories/:id", handlers.RequireAdminOrManager(), mm.UpdateCategory)
+			menuGroup.DELETE("/categories/:id", handlers.RequireAdminOrManager(), mm.DeleteCategory)
+			// items
+			menuGroup.POST("/items", handlers.RequireAdminOrManager(), mm.CreateItem)
+			menuGroup.GET("/items/:id", mm.GetItem)
+			menuGroup.GET("/items", mm.ListItems)
+			menuGroup.PUT("/items/:id", handlers.RequireAdminOrManager(), mm.UpdateItem)
+			menuGroup.PATCH("/items/:id/availability", handlers.RequireStaff(), mm.UpdateAvailability)
+			menuGroup.DELETE("/items/:id", handlers.RequireAdminOrManager(), mm.DeleteItem)
+			// variants
+			menuGroup.POST("/items/:id/variants", handlers.RequireAdminOrManager(), mm.CreateVariant)
+			menuGroup.PUT("/variants/:id", handlers.RequireAdminOrManager(), mm.UpdateVariant)
+			menuGroup.DELETE("/variants/:id", handlers.RequireAdminOrManager(), mm.DeleteVariant)
+			// addons
+			menuGroup.POST("/items/:id/addons", handlers.RequireAdminOrManager(), mm.CreateAddon)
+			menuGroup.PUT("/addons/:id", handlers.RequireAdminOrManager(), mm.UpdateAddon)
+			menuGroup.DELETE("/addons/:id", handlers.RequireAdminOrManager(), mm.DeleteAddon)
+		}
 		// Protect admin routes
 		admin := api.Group("")
 		admin.Use(auth.RequireAuth(""))
@@ -155,20 +194,47 @@ func main() {
 			reservations.DELETE("/:id", reservationsAPI.CancelReservation)
 		}
 
-		// Authenticated user routes
-		user := api.Group("")
-		user.Use(auth.RequireAuth(""))
+		// Authenticated user routes (customer-facing)
+		customer := api.Group("")
+		customer.Use(auth.RequireAnyRole("customer", "waiter", "chef", "cashier", "admin"))
 		{
-			user.POST("/favorites", favoritesAPI.AddFavorite)
-			user.DELETE("/favorites/:menu_item_id", favoritesAPI.RemoveFavorite)
-			user.POST("/reviews", reviewsAPI.CreateReview)
-			user.POST("/notifications/subscribe", notificationsAPI.Subscribe)
-			user.DELETE("/notifications/:id", notificationsAPI.Unsubscribe)
-			user.GET("/notifications/account/:account_id", notificationsAPI.ListForAccount)
+			// profile
+			customer.GET("/me", customerAPI.Me)
+			customer.PATCH("/me", customerAPI.UpdateMe)
+			// loyalty & promo
+			customer.GET("/loyalty", customerAPI.GetLoyalty)
+			customer.POST("/loyalty/redeem", customerAPI.RedeemPoints)
+			customer.POST("/promo/apply", customerAPI.ApplyPromo)
+			// waitlist (customer create/update own entry)
+			customer.POST("/branches/:branchId/waitlist", customerAPI.CreateWaitlist)
+			customer.PATCH("/branches/:branchId/waitlist/:entryId", customerAPI.UpdateWaitlist)
+			// favorites, reviews, notifications
+			customer.POST("/favorites", favoritesAPI.AddFavorite)
+			customer.DELETE("/favorites/:menu_item_id", favoritesAPI.RemoveFavorite)
+			customer.POST("/reviews", reviewsAPI.CreateReview)
+			customer.POST("/notifications/subscribe", notificationsAPI.Subscribe)
+			customer.DELETE("/notifications/:id", notificationsAPI.Unsubscribe)
+			customer.GET("/notifications/account/:account_id", notificationsAPI.ListForAccount)
 		}
 
-		// Kitchen
-		kitchen := admin.Group("/kitchen")
+		// Staff-facing
+		staff := api.Group("/staff")
+		staff.Use(auth.RequireAnyRole("waiter", "chef", "host", "cashier", "manager", "admin"))
+		{
+			// table states
+			staff.PATCH("/branches/:branchId/tables/:tableId/state", staffAPI.UpdateTableState)
+			// assignments
+			staff.POST("/branches/:branchId/tables/:tableId/assign", staffAPI.AssignWaiterToTable)
+			staff.POST("/branches/:branchId/orders/:orderId/assign-chef", staffAPI.AssignChefToOrder)
+			// order lifecycle extensions
+			staff.POST("/branches/:branchId/orders/:orderId/split", staffAPI.SplitOrder)
+			staff.POST("/branches/:branchId/orders/merge", staffAPI.MergeOrders)
+			staff.POST("/branches/:branchId/orders/:orderId/tip", staffAPI.AddTip)
+		}
+
+		// Kitchen (admin/staff scoped)
+		kitchen := api.Group("/kitchen")
+		kitchen.Use(auth.RequireAnyRole("chef", "manager", "admin"))
 		{
 			kitchen.GET("/orders", kitchenAPI.ListPending)
 			kitchen.PUT("/orders/:id/status", kitchenAPI.UpdateStatus)
@@ -194,13 +260,38 @@ func main() {
 			accounts.POST("", accountHandler.CreateAccount)
 		}
 
-		// Kitchen routes removed for now
-
-		// WebSocket route removed for now
+		// Admin-facing
+		mgmt := api.Group("/admin")
+		mgmt.Use(auth.RequireAnyRole("admin", "manager"))
+		{
+			// inventory
+			mgmt.GET("/branches/:branchId/inventory", adminAPI.ListInventory)
+			mgmt.POST("/branches/:branchId/inventory", adminAPI.CreateInventoryItem)
+			mgmt.PATCH("/branches/:branchId/inventory/:itemId/adjust", adminAPI.AdjustInventory)
+			mgmt.POST("/branches/:branchId/inventory/recipes", adminAPI.LinkRecipe)
+			// reports
+			mgmt.GET("/reports/sales", adminAPI.SalesReport)
+			mgmt.GET("/reports/popular-items", adminAPI.PopularItemsReport)
+			mgmt.GET("/reports/customers", adminAPI.CustomersReport)
+			mgmt.GET("/reports/operations", adminAPI.OperationsReport)
+			// branches
+			mgmt.GET("/branches", adminAPI.ListBranches)
+			mgmt.POST("/branches", adminAPI.CreateBranch)
+			mgmt.PATCH("/branches/:branchId", adminAPI.UpdateBranch)
+			// staff
+			mgmt.GET("/staff", adminAPI.ListStaff)
+			mgmt.POST("/staff", adminAPI.CreateStaff)
+			mgmt.PATCH("/staff/:staffId", adminAPI.UpdateStaff)
+		}
 	}
 
 	// Websocket endpoint (simple)
 	router.GET("/ws", func(c *gin.Context) {
+		websocket.HandleWebSocket(hub, c.Writer, c.Request)
+	})
+
+	// Websocket endpoint for menu updates (shares same hub; clients filter by type)
+	router.GET("/ws/menu-updates", func(c *gin.Context) {
 		websocket.HandleWebSocket(hub, c.Writer, c.Request)
 	})
 
