@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"restaurant-system/internal/models"
+	"restaurant-system/internal/payments"
 
 	"github.com/google/uuid"
 )
@@ -84,6 +85,11 @@ func (s *PaymentSQLService) GetPayment(ctx context.Context, restaurantID uint, i
 
 // HandleTelebirrCallback verifies and updates payment records; gateway-specific verification required
 func (s *PaymentSQLService) HandleTelebirrCallback(payload map[string]string) error {
+	// Verify signature using Telebirr helper
+	if !payments.VerifyCallback(payload) {
+		return errors.New("invalid telebirr signature")
+	}
+
 	// Example payload expected: {"transaction_id":"...","order_id":"...","status":"completed"}
 	tid, ok1 := payload["transaction_id"]
 	oid, ok2 := payload["order_id"]
