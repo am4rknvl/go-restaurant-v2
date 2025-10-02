@@ -15,7 +15,13 @@ func NewGorm(pgURL string) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := db.AutoMigrate(&models.MenuCategory{}, &models.MenuItemGorm{}, &models.MenuVariant{}, &models.MenuAddon{}); err != nil {
+	if err := db.AutoMigrate(
+		&models.MenuCategory{}, &models.MenuItemGorm{}, &models.MenuVariant{}, &models.MenuAddon{},
+		&models.UserRole{}, &models.InventoryItem{}, &models.InventoryAdjustment{},
+		&models.StaffAssignment{}, &models.OrderAudit{}, &models.Discount{}, &models.DiscountUsage{},
+		&models.LoyaltyAccount{}, &models.LoyaltyTransaction{}, &models.Restaurant{},
+		&models.TableState{}, &models.WaitlistEntry{}, &models.PaymentTip{},
+	); err != nil {
 		return nil, err
 	}
 	log.Println("GORM AutoMigrate completed for menu models")

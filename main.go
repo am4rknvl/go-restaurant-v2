@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"restaurant-system/internal/auth"
 	"restaurant-system/internal/config"
@@ -45,8 +46,17 @@ func main() {
 	hub := websocket.NewHub()
 	go hub.Run()
 
-	// Initialize GORM (for menu management)
+	// Initialize GORM (for menu management and enterprise features)
 	pgURL := os.Getenv("PG_URL")
+	if pgURL == "" {
+		host := getenvDefault("PG_HOST", "localhost")
+		port := getenvDefault("PG_PORT", "5432")
+		user := getenvDefault("PG_USER", "postgres")
+		password := getenvDefault("PG_PASSWORD", "postgres")
+		dbname := getenvDefault("PG_DATABASE", "restaurant")
+		sslmode := getenvDefault("PG_SSLMODE", "disable")
+		pgURL = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, dbname, sslmode)
+	}
 	gdb, gerr := database.NewGorm(pgURL)
 	if gerr != nil {
 		log.Fatal("Failed to init GORM:", gerr)
@@ -72,6 +82,8 @@ func main() {
 	adminAPI := handlers.NewAdminAPI()
 	staffAPI := handlers.NewStaffAPI()
 	customerAPI := handlers.NewCustomerAPI()
+	enterpriseAPI := handlers.NewEnterpriseAPI(gdb, hub)
+	orderWSHandler := handlers.NewOrderWSHandler(hub)
 
 	// Setup router
 	router := gin.Default()
@@ -260,29 +272,85 @@ func main() {
 			accounts.POST("", accountHandler.CreateAccount)
 		}
 
-		// Admin-facing
-		mgmt := api.Group("/admin")
-		mgmt.Use(auth.RequireAnyRole("admin", "manager"))
-		{
-			// inventory
-			mgmt.GET("/branches/:branchId/inventory", adminAPI.ListInventory)
-			mgmt.POST("/branches/:branchId/inventory", adminAPI.CreateInventoryItem)
-			mgmt.PATCH("/branches/:branchId/inventory/:itemId/adjust", adminAPI.AdjustInventory)
-			mgmt.POST("/branches/:branchId/inventory/recipes", adminAPI.LinkRecipe)
-			// reports
-			mgmt.GET("/reports/sales", adminAPI.SalesReport)
-			mgmt.GET("/reports/popular-items", adminAPI.PopularItemsReport)
-			mgmt.GET("/reports/customers", adminAPI.CustomersReport)
-			mgmt.GET("/reports/operations", adminAPI.OperationsReport)
-			// branches
-			mgmt.GET("/branches", adminAPI.ListBranches)
-			mgmt.POST("/branches", adminAPI.CreateBranch)
-			mgmt.PATCH("/branches/:branchId", adminAPI.UpdateBranch)
-			// staff
-			mgmt.GET("/staff", adminAPI.ListStaff)
-			mgmt.POST("/staff", adminAPI.CreateStaff)
-			mgmt.PATCH("/staff/:staffId", adminAPI.UpdateStaff)
-		}
+		// Enterprise endpoints
+		api.GET("/accounts/:id", enterpriseAPI.GetAccount)
+		api.PUT("/accounts/:id", enterpriseAPI.UpdateAccount)
+		api.POST("/accounts/:id/roles", enterpriseAPI.AssignRole)
+		api.DELETE("/accounts/:id/roles/:role", enterpriseAPI.RemoveRole)
+
+		api.GET("/inventory", enterpriseAPI.ListInventory)
+		api.POST("/inventory", enterpriseAPI.CreateInventoryItem)
+		api.PUT("/inventory/:id", enterpriseAPI.UpdateInventoryItem)
+		api.PATCH("/inventory/:id/adjust", enterpriseAPI.AdjustInventory)
+
+		api.POST("/tables/:table_id/assign-waiter", enterpriseAPI.AssignWaiterToTable)
+		api.POST("/orders/:order_id/assign-chef", enterpriseAPI.AssignChefToOrder)
+		api.GET("/staff/assignments", enterpriseAPI.ListStaffAssignments)
+
+		api.POST("/orders/:id/split", enterpriseAPI.SplitOrder)
+		api.POST("/orders/:id/merge", enterpriseAPI.MergeOrders)
+		api.POST("/payments/:id/tip", enterpriseAPI.AddTip)
+
+		api.POST("/discounts", enterpriseAPI.CreateDiscount)
+		api.POST("/discounts/apply", enterpriseAPI.ApplyDiscount)
+		api.GET("/accounts/:id/loyalty", enterpriseAPI.GetLoyalty)
+		api.POST("/accounts/:id/loyalty/earn", enterpriseAPI.EarnLoyaltyPoints)
+
+		api.GET("/reports/sales", enterpriseAPI.SalesReport)
+		api.GET("/reports/popular-items", enterpriseAPI.PopularItemsReport)
+		api.GET("/reports/customers/top", enterpriseAPI.TopCustomersReport)
+
+		api.GET("/restaurants", enterpriseAPI.ListRestaurants)
+		api.POST("/restaurants", enterpriseAPI.CreateRestaurant)
+		api.PUT("/restaurants/:id", enterpriseAPI.UpdateRestaurant)
+
+		api.PATCH("/tables/:id/state", enterpriseAPI.UpdateTableState)
+		api.POST("/waitlist", enterpriseAPI.JoinWaitlist)
+		api.GET("/waitlist", enterpriseAPI.ListWaitlist)
+
+		// Enterprise APIs
+		// User profiles & role management
+		api.GET("/accounts/:id", auth.RequireAnyRole("admin", "manager"), enterpriseAPI.GetAccount)
+		api.PUT("/accounts/:id", auth.RequireAnyRole("admin", "manager"), enterpriseAPI.UpdateAccount)
+		api.POST("/accounts/:id/roles", auth.RequireAnyRole("admin"), enterpriseAPI.AssignRole)
+		api.DELETE("/accounts/:id/roles/:role", auth.RequireAnyRole("admin"), enterpriseAPI.RemoveRole)
+
+		// Inventory & stock management
+		api.GET("/inventory", auth.RequireAnyRole("chef", "manager", "admin"), enterpriseAPI.ListInventory)
+		api.POST("/inventory", auth.RequireAnyRole("manager", "admin"), enterpriseAPI.CreateInventoryItem)
+		api.PUT("/inventory/:id", auth.RequireAnyRole("manager", "admin"), enterpriseAPI.UpdateInventoryItem)
+		api.PATCH("/inventory/:id/adjust", auth.RequireAnyRole("chef", "manager", "admin"), enterpriseAPI.AdjustInventory)
+
+		// Staff assignment
+		api.POST("/tables/:table_id/assign-waiter", auth.RequireAnyRole("manager", "admin"), enterpriseAPI.AssignWaiterToTable)
+		api.POST("/orders/:order_id/assign-chef", auth.RequireAnyRole("manager", "admin"), enterpriseAPI.AssignChefToOrder)
+		api.GET("/staff/assignments", auth.RequireAnyRole("manager", "admin"), enterpriseAPI.ListStaffAssignments)
+
+		// Order lifecycle extensions
+		api.POST("/orders/:id/split", auth.RequireAnyRole("waiter", "cashier", "manager", "admin"), enterpriseAPI.SplitOrder)
+		api.POST("/orders/:id/merge", auth.RequireAnyRole("waiter", "cashier", "manager", "admin"), enterpriseAPI.MergeOrders)
+		api.POST("/payments/:id/tip", auth.RequireAnyRole("customer", "cashier"), enterpriseAPI.AddTipToPayment)
+
+		// Loyalty & discounts
+		api.POST("/discounts", auth.RequireAnyRole("manager", "admin"), enterpriseAPI.CreateDiscount)
+		api.POST("/discounts/apply", enterpriseAPI.ApplyDiscount)
+		api.GET("/accounts/:id/loyalty", enterpriseAPI.GetLoyaltyAccount)
+		api.POST("/accounts/:id/loyalty/earn", auth.RequireAnyRole("cashier", "manager", "admin"), enterpriseAPI.EarnLoyaltyPoints)
+
+		// Analytics & reporting
+		api.GET("/reports/sales", auth.RequireAnyRole("manager", "admin"), enterpriseAPI.SalesReport)
+		api.GET("/reports/popular-items", auth.RequireAnyRole("manager", "admin"), enterpriseAPI.PopularItemsReport)
+		api.GET("/reports/customers/top", auth.RequireAnyRole("manager", "admin"), enterpriseAPI.TopCustomersReport)
+
+		// Multi-restaurant / branch support
+		api.GET("/restaurants", enterpriseAPI.ListRestaurants)
+		api.POST("/restaurants", auth.RequireAnyRole("admin"), enterpriseAPI.CreateRestaurant)
+		api.PUT("/restaurants/:id", auth.RequireAnyRole("admin"), enterpriseAPI.UpdateRestaurant)
+
+		// Table state management & waitlist
+		api.PATCH("/tables/:id/state", auth.RequireAnyRole("waiter", "host", "manager", "admin"), enterpriseAPI.UpdateTableState)
+		api.POST("/waitlist", enterpriseAPI.JoinWaitlist)
+		api.GET("/waitlist", enterpriseAPI.ListWaitlist)
 	}
 
 	// Websocket endpoint (simple)
@@ -292,6 +360,14 @@ func main() {
 
 	// Websocket endpoint for menu updates (shares same hub; clients filter by type)
 	router.GET("/ws/menu-updates", func(c *gin.Context) {
+		websocket.HandleWebSocket(hub, c.Writer, c.Request)
+	})
+
+	// Websocket endpoint for order updates
+	router.GET("/ws/orders", orderWSHandler.HandleOrderUpdates)
+
+	// WebSocket endpoint for waitlist updates
+	router.GET("/ws/waitlist", func(c *gin.Context) {
 		websocket.HandleWebSocket(hub, c.Writer, c.Request)
 	})
 
