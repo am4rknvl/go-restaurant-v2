@@ -7,6 +7,7 @@ import (
 	"restaurant-system/internal/config"
 	"restaurant-system/internal/database"
 	"restaurant-system/internal/handlers"
+	"restaurant-system/internal/models"
 	"restaurant-system/internal/services"
 	"restaurant-system/internal/websocket"
 
@@ -84,6 +85,34 @@ func main() {
 	customerAPI := handlers.NewCustomerAPI()
 	enterpriseAPI := handlers.NewEnterpriseAPI(gdb, hub)
 	orderWSHandler := handlers.NewOrderWSHandler(hub)
+
+	// Initialize Telebirr B2B service and handler
+	telebirrConfig := models.TelebirrConfig{
+		AppID:          os.Getenv("TELEBIRR_APP_ID"),
+		PrivateKey:     os.Getenv("TELEBIRR_PRIVATE_KEY"),
+		PublicKey:      os.Getenv("TELEBIRR_PUBLIC_KEY"),
+		NotifyURL:      os.Getenv("TELEBIRR_NOTIFY_URL"),
+		ReturnURL:      os.Getenv("TELEBIRR_RETURN_URL"),
+		BaseURL:        os.Getenv("TELEBIRR_BASE_URL"),
+		TokenURL:       os.Getenv("TELEBIRR_TOKEN_URL"),
+		OrderURL:       os.Getenv("TELEBIRR_ORDER_URL"),
+		WebCheckoutURL: os.Getenv("TELEBIRR_WEB_CHECKOUT_URL"),
+	}
+	telebirrService := services.NewTelebirrService(gdb, telebirrConfig)
+	telebirrB2BHandler := handlers.NewTelebirrB2BHandler(telebirrService, orderService)
+
+	// Initialize Telebirr C2B service and handler
+	telebirrC2BConfig := models.TelebirrC2BConfig{
+		AppID:           os.Getenv("TELEBIRR_C2B_APP_ID"),
+		PrivateKey:      os.Getenv("TELEBIRR_C2B_PRIVATE_KEY"),
+		PublicKey:       os.Getenv("TELEBIRR_C2B_PUBLIC_KEY"),
+		NotifyURL:       os.Getenv("TELEBIRR_C2B_NOTIFY_URL"),
+		ReturnURL:       os.Getenv("TELEBIRR_C2B_RETURN_URL"),
+		H5PayURL:        os.Getenv("TELEBIRR_C2B_H5_PAY_URL"),
+		UnifiedOrderURL: os.Getenv("TELEBIRR_C2B_UNIFIED_ORDER_URL"),
+	}
+	telebirrC2BService := services.NewTelebirrC2BService(gdb, telebirrC2BConfig)
+	telebirrC2BHandler := handlers.NewTelebirrC2BHandler(telebirrC2BService, orderService)
 
 	// Setup router
 	router := gin.Default()
@@ -351,6 +380,29 @@ func main() {
 		api.PATCH("/tables/:id/state", auth.RequireAnyRole("waiter", "host", "manager", "admin"), enterpriseAPI.UpdateTableState)
 		api.POST("/waitlist", enterpriseAPI.JoinWaitlist)
 		api.GET("/waitlist", enterpriseAPI.ListWaitlist)
+
+		// Telebirr B2B Payment Integration
+		telebirrB2B := api.Group("/payments/telebirr/b2b")
+		{
+			telebirrB2B.POST("/create", auth.RequireAnyRole("customer", "cashier", "manager", "admin"), telebirrB2BHandler.CreateB2BPayment)
+			telebirrB2B.GET("/status/:prepay_id", telebirrB2BHandler.GetPaymentStatus)
+			telebirrB2B.POST("/notify", telebirrB2BHandler.HandleB2BNotification) // No auth - external webhook
+			telebirrB2B.GET("/return", telebirrB2BHandler.HandleB2BReturn)        // No auth - external redirect
+			telebirrB2B.GET("/orders/:order_id", auth.RequireAnyRole("customer", "cashier", "manager", "admin"), telebirrB2BHandler.GetOrderPayments)
+			telebirrB2B.POST("/refund", auth.RequireAnyRole("manager", "admin"), telebirrB2BHandler.RefundB2BPayment)
+		}
+
+		// Telebirr C2B (Customer-to-Business) H5 Payment Integration
+		telebirrC2B := api.Group("/payments/telebirr/c2b")
+		{
+			telebirrC2B.POST("/create", auth.RequireAnyRole("customer", "cashier", "manager", "admin"), telebirrC2BHandler.CreateC2BPayment)
+			telebirrC2B.GET("/status/:out_trade_no", telebirrC2BHandler.GetC2BPaymentStatus)
+			telebirrC2B.POST("/notify", telebirrC2BHandler.HandleC2BNotification) // No auth - external webhook
+			telebirrC2B.GET("/return", telebirrC2BHandler.HandleC2BReturn)        // No auth - external redirect
+			telebirrC2B.GET("/orders/:order_id", auth.RequireAnyRole("customer", "cashier", "manager", "admin"), telebirrC2BHandler.GetOrderC2BPayments)
+			telebirrC2B.GET("/query/:out_trade_no", auth.RequireAnyRole("customer", "cashier", "manager", "admin"), telebirrC2BHandler.QueryC2BPayment)
+			telebirrC2B.POST("/refund", auth.RequireAnyRole("manager", "admin"), telebirrC2BHandler.RefundC2BPayment)
+		}
 	}
 
 	// Websocket endpoint (simple)

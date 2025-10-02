@@ -376,6 +376,11 @@ func (s *TelebirrService) verifyNotificationSign(params map[string]string) bool 
 	return s.rsaVerify(signStr, sign)
 }
 
+// DB returns the database instance for handlers to access
+func (s *TelebirrService) DB() *gorm.DB {
+	return s.db
+}
+
 func (s *TelebirrService) rsaVerify(data, sign string) bool {
 	block, _ := pem.Decode([]byte(s.config.PublicKey))
 	if block == nil {

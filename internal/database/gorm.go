@@ -21,6 +21,8 @@ func NewGorm(pgURL string) (*gorm.DB, error) {
 		&models.StaffAssignment{}, &models.OrderAudit{}, &models.Discount{}, &models.DiscountUsage{},
 		&models.LoyaltyAccount{}, &models.LoyaltyTransaction{}, &models.Restaurant{},
 		&models.TableState{}, &models.WaitlistEntry{}, &models.PaymentTip{},
+		&models.TelebirrToken{}, &models.TelebirrOrder{}, &models.TelebirrNotification{},
+		&models.TelebirrC2BOrder{}, &models.TelebirrC2BNotification{},
 	); err != nil {
 		return nil, err
 	}

@@ -19,6 +19,67 @@ kubectl apply -f k8s/
 kubectl set image deployment/restaurant-app app=your-registry/restaurant-system:$(git rev-parse --short HEAD)
 kubectl rollout status deployment/restaurant-app
 ```
+
+## Telebirr Payment Integration
+
+### B2B Integration (Business-to-Business)
+For business payments between merchants.
+
+#### Setup
+1. Get B2B credentials from Ethiopian Telecom
+2. Set B2B environment variables in `env.example`
+3. Configure webhook URLs in Telebirr merchant dashboard
+
+#### API Endpoints
+- `POST /api/v1/payments/telebirr/b2b/create` - Create B2B payment
+- `GET /api/v1/payments/telebirr/b2b/status/:prepay_id` - Check B2B status
+- `POST /api/v1/payments/telebirr/b2b/notify` - B2B Webhook (external)
+- `GET /api/v1/payments/telebirr/b2b/return` - B2B Return URL (external)
+
+### C2B H5 Integration (Customer-to-Business)
+For individual customers paying restaurants via H5 web interface.
+
+#### Setup
+1. Get C2B credentials from Ethiopian Telecom
+2. Set C2B environment variables in `env.example`
+3. Configure webhook URLs in Telebirr merchant dashboard
+
+#### API Endpoints
+- `POST /api/v1/payments/telebirr/c2b/create` - Create H5 payment
+- `GET /api/v1/payments/telebirr/c2b/status/:out_trade_no` - Check C2B status
+- `POST /api/v1/payments/telebirr/c2b/notify` - C2B Webhook (external)
+- `GET /api/v1/payments/telebirr/c2b/return` - C2B Return URL (external)
+- `GET /api/v1/payments/telebirr/c2b/query/:out_trade_no` - Query payment
+
+#### C2B Flow (Restaurant Customers)
+1. Customer confirms restaurant order
+2. Call C2B create payment API
+3. Redirect customer to returned H5 payment URL
+4. Customer pays via Telebirr H5 interface
+5. Webhook updates order status
+6. Customer redirected to success/failure page
+
+#### Example C2B Request
+```json
+POST /api/v1/payments/telebirr/c2b/create
+{
+  "order_id": "order_123",
+  "amount": 150.50,
+  "subject": "Restaurant Order Payment",
+  "body": "Payment for Table 5 - Order #123"
+}
+```
+
+#### Example C2B Response
+```json
+{
+  "out_trade_no": "REST_C2B_order_123_1640995200",
+  "h5_pay_url": "https://h5pay.ethiotelecom.et/pay?params=...",
+  "trade_no": "2021123012345678",
+  "status": "pending",
+  "message": "H5 payment created successfully. Redirect customer to h5_pay_url"
+}
+```
 # Restaurant System - Backend
 
 This repository contains a Go (Gin) backend for a restaurant table ordering platform. This patch added several endpoints and WebSocket support. Apply migrations in `migrations.sql` to your Postgres database.
