@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -103,6 +104,41 @@ func VerifyCallback(m map[string]string) bool {
 	}
 	expected := signParams(values, cfg.AppSecret)
 	return hmac.Equal([]byte(expected), []byte(m["sign"]))
+}
+
+// VerifyCallbackStrict validates signature, timestamp window (+/-5m) and nonce uniqueness using DB.
+func VerifyCallbackStrict(m map[string]string, db *sql.DB) (bool, error) {
+	// basic signature check
+	if !VerifyCallback(m) {
+		return false, errors.New("invalid signature")
+	}
+
+	// timestamp check (telebirr uses seconds)
+	tsStr, ok := m["timestamp"]
+	if !ok || tsStr == "" {
+		return false, errors.New("missing timestamp")
+	}
+	ts, err := strconv.ParseInt(tsStr, 10, 64)
+	if err != nil {
+		return false, errors.New("invalid timestamp")
+	}
+	now := time.Now().Unix()
+	if ts < now-300 || ts > now+300 {
+		return false, errors.New("timestamp outside allowed window")
+	}
+
+	// nonce uniqueness
+	nonce, ok := m["nonce"]
+	if !ok || nonce == "" {
+		return false, errors.New("missing nonce")
+	}
+	// attempt to insert nonce as a unique row; if conflict, it's a replay
+	id := strconv.FormatInt(time.Now().UnixNano(), 10)
+	_, err = db.Exec("INSERT INTO payment_callbacks (id, order_id, nonce, timestamp, created_at) VALUES ($1,$2,$3,$4,now())", id, m["order_id"], nonce, ts)
+	if err != nil {
+		return false, errors.New("nonce replay or db error")
+	}
+	return true, nil
 }
 
 func signParams(params map[string]string, secret string) string {

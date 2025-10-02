@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"encoding/json"
 	"restaurant-system/internal/models"
 	"restaurant-system/internal/payments"
 
@@ -85,27 +86,40 @@ func (s *PaymentSQLService) GetPayment(ctx context.Context, restaurantID uint, i
 
 // HandleTelebirrCallback verifies and updates payment records; gateway-specific verification required
 func (s *PaymentSQLService) HandleTelebirrCallback(payload map[string]string) error {
-	// Verify signature using Telebirr helper
-	if !payments.VerifyCallback(payload) {
-		return errors.New("invalid telebirr signature")
+
+	// Verify signature, timestamp and nonce
+	ok, err := payments.VerifyCallbackStrict(payload, s.db)
+	if err != nil || !ok {
+		return errors.New("telebirr verification failed: " + err.Error())
 	}
 
-	// Example payload expected: {"transaction_id":"...","order_id":"...","status":"completed"}
+	// Expected fields
 	tid, ok1 := payload["transaction_id"]
 	oid, ok2 := payload["order_id"]
 	status := payload["status"]
 	if !ok1 || !ok2 || tid == "" || oid == "" {
 		return errors.New("invalid telebirr payload")
 	}
-	// Update payment table: set transaction id and status
-	_, err := s.db.ExecContext(context.Background(), "UPDATE payments SET transaction_id=$1, status=$2, updated_at=now() WHERE order_id=$3", tid, status, oid)
+
+	// Log event
+	evtID := uuid.New().String()
+	evtPayload, _ := json.Marshal(payload)
+	_, _ = s.db.ExecContext(context.Background(), "INSERT INTO payment_events (id, payment_id, order_id, event_type, payload, created_at) VALUES ($1,$2,$3,$4,$5,now())", evtID, "", oid, "telebirr_callback", evtPayload)
+
+	// Update payment record
+	_, err = s.db.ExecContext(context.Background(), "UPDATE payments SET transaction_id=$1, status=$2, updated_at=now() WHERE order_id=$3", tid, status, oid)
 	if err != nil {
+		// enqueue retry
+		qid := uuid.New().String()
+		_, _ = s.db.ExecContext(context.Background(), "INSERT INTO webhook_retry_queue (id, payload, attempts, next_attempt, created_at) VALUES ($1,$2,$3,$4,now())", qid, evtPayload, 0, time.Now().Add(1*time.Minute))
 		return err
 	}
-	// If payment completed, mark order/session as paid: here we set orders.status = completed for simplicity
+
+	// If payment completed, mark order as completed
 	if status == "completed" {
 		_, _ = s.db.ExecContext(context.Background(), "UPDATE orders SET status=$1, updated_at=now() WHERE id=$2", string(models.OrderStatusCompleted), oid)
 	}
+
 	return nil
 }
 

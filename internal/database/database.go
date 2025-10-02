@@ -109,6 +109,29 @@ func (db *DB) createTables() error {
 			updated_at TIMESTAMPTZ DEFAULT NOW(),
 			FOREIGN KEY (order_id) REFERENCES orders(id)
 		)`,
+		`CREATE TABLE IF NOT EXISTS payment_callbacks (
+			id TEXT PRIMARY KEY,
+			order_id TEXT,
+			nonce TEXT UNIQUE,
+			timestamp BIGINT,
+			processed_at TIMESTAMPTZ,
+			created_at TIMESTAMPTZ DEFAULT NOW()
+		)`,
+		`CREATE TABLE IF NOT EXISTS payment_events (
+			id TEXT PRIMARY KEY,
+			payment_id TEXT,
+			order_id TEXT,
+			event_type TEXT,
+			payload JSONB,
+			created_at TIMESTAMPTZ DEFAULT NOW()
+		)`,
+		`CREATE TABLE IF NOT EXISTS webhook_retry_queue (
+			id TEXT PRIMARY KEY,
+			payload JSONB,
+			attempts INT DEFAULT 0,
+			next_attempt TIMESTAMPTZ,
+			created_at TIMESTAMPTZ DEFAULT NOW()
+		)`,
 		`CREATE TABLE IF NOT EXISTS otps (
 			id TEXT PRIMARY KEY,
 			phone_number TEXT NOT NULL,
