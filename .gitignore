@@ -1,0 +1,85 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+/*.out
+
+# Output of the go coverage tool
+coverage.out
+
+# Dependency directories (remove the comment below to include vendor when needed)
+/vendor/
+
+# IDE/editor directories
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment variables and local config
+.env
+.env.*
+.env.local
+.env.production
+.env.test
+
+# Private keys, certs and secrets
+*.pem
+*.key
+*.crt
+*.p12
+
+# Logs and runtime files
+*.log
+logs/
+tmp/
+*.pid
+
+# Build directories
+bin/
+_build/
+
+# Node / front-end
+node_modules/
+dist/
+build/
+
+# Docker
+docker-compose.override.yml
+.env.docker
+
+# Go modules and cache
+GOMODCACHE/
+*.modcache
+
+# Go workspace
+*.cache
+*.coverprofile
+
+# Generated files
+*.gen.go
+
+# Terraform, serverless, etc (optional)
+.terraform/
+.serverless/
+
+# OneDrive / syncing artifacts
+~$*
+~*.*
+
+# Misc
+*.swp
+*~
+
+# Ensure sensitive creds are not accidentally committed
+credentials.json
+secrets.json
+
+# Allow the go.sum to be committed (usually safe) — do not ignore
+# go.sum
