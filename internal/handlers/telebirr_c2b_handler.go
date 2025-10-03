@@ -52,7 +52,7 @@ func (h *TelebirrC2BHandler) CreateC2BPayment(c *gin.Context) {
 	}
 
 	// Validate order exists
-	order, err := h.orderService.GetOrder(req.OrderID)
+	_, err := h.orderService.GetOrder(req.OrderID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "order_not_found"})
 		return
@@ -136,7 +136,6 @@ func (h *TelebirrC2BHandler) HandleC2BNotification(c *gin.Context) {
 	}
 
 	// Update restaurant order status based on trade status
-	outTradeNo := notification["out_trade_no"]
 	tradeStatus := notification["trade_status"]
 
 	// Extract order_id from passback_params
@@ -261,11 +260,8 @@ func (h *TelebirrC2BHandler) RefundC2BPayment(c *gin.Context) {
 		return
 	}
 
-	// TODO: Implement actual refund API call to Telebirr
-	// For now, just update local status
-	c2bOrder.Status = "refunded"
-	if err := h.c2bService.DB().Save(&c2bOrder).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed_to_update_payment_status"})
+	if err := h.c2bService.RefundC2B(req.OutTradeNo, req.RefundAmount, req.RefundReason); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "refund_failed", "details": err.Error()})
 		return
 	}
 
@@ -304,22 +300,35 @@ func (h *TelebirrC2BHandler) QueryC2BPayment(c *gin.Context) {
 		return
 	}
 
-	// TODO: Implement query API call to Telebirr to get real-time status
-	// For now, return local database status
-	c2bOrder, err := h.c2bService.GetOrderByOutTradeNo(outTradeNo)
+	// Call Telebirr query API for real-time status
+	res, err := h.c2bService.QueryC2B(outTradeNo)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "payment_not_found"})
+		// Fallback to local DB if query fails
+		c2bOrder, dbErr := h.c2bService.GetOrderByOutTradeNo(outTradeNo)
+		if dbErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "query_failed", "details": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"out_trade_no": c2bOrder.OutTradeNo,
+			"trade_no":     c2bOrder.TradeNo,
+			"trade_status": h.mapStatusToTradeStatus(c2bOrder.Status),
+			"total_amount": c2bOrder.TotalAmount,
+			"subject":      c2bOrder.Subject,
+			"gmt_create":   c2bOrder.CreatedAt.Format("2006-01-02 15:04:05"),
+			"gmt_payment":  c2bOrder.UpdatedAt.Format("2006-01-02 15:04:05"),
+		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"out_trade_no": c2bOrder.OutTradeNo,
-		"trade_no":     c2bOrder.TradeNo,
-		"trade_status": h.mapStatusToTradeStatus(c2bOrder.Status),
-		"total_amount": c2bOrder.TotalAmount,
-		"subject":      c2bOrder.Subject,
-		"gmt_create":   c2bOrder.CreatedAt.Format("2006-01-02 15:04:05"),
-		"gmt_payment":  c2bOrder.UpdatedAt.Format("2006-01-02 15:04:05"),
+		"out_trade_no": outTradeNo,
+		"trade_no":     res.TradeNo,
+		"trade_status": res.TradeStatus,
+		"total_amount": res.TotalAmount,
+		"subject":      res.Subject,
+		"gmt_create":   res.GmtCreate,
+		"gmt_payment":  res.GmtPayment,
 	})
 }
 

@@ -50,6 +50,8 @@ type TelebirrC2BConfig struct {
 	ReturnURL       string `json:"return_url"`
 	H5PayURL        string `json:"h5_pay_url"`        // H5 payment page URL
 	UnifiedOrderURL string `json:"unified_order_url"` // Create order API
+	RefundURL       string `json:"refund_url"`        // Refund API (optional; falls back to unified URL)
+	QueryURL        string `json:"query_url"`         // Query API (optional; falls back to unified URL)
 }
 
 // Request structure for H5 C2B order creation

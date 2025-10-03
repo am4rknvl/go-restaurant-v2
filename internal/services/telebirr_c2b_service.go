@@ -47,6 +47,61 @@ type H5PayResponse struct {
 	TradeNo    string `json:"trade_no"`
 }
 
+type C2BRefundRequest struct {
+	AppID      string `json:"appid"`
+	Method     string `json:"method"`
+	Format     string `json:"format"`
+	Charset    string `json:"charset"`
+	SignType   string `json:"sign_type"`
+	Sign       string `json:"sign"`
+	Timestamp  string `json:"timestamp"`
+	Version    string `json:"version"`
+	BizContent string `json:"biz_content"`
+}
+
+type C2BRefundBiz struct {
+	OutTradeNo   string `json:"out_trade_no"`
+	RefundAmount string `json:"refund_amount"`
+	RefundReason string `json:"refund_reason,omitempty"`
+}
+
+type C2BRefundResponse struct {
+	Code    string `json:"code"`
+	Msg     string `json:"msg"`
+	SubCode string `json:"sub_code"`
+	SubMsg  string `json:"sub_msg"`
+	Status  string `json:"status"`
+}
+
+type C2BQueryRequest struct {
+	AppID      string `json:"appid"`
+	Method     string `json:"method"`
+	Format     string `json:"format"`
+	Charset    string `json:"charset"`
+	SignType   string `json:"sign_type"`
+	Sign       string `json:"sign"`
+	Timestamp  string `json:"timestamp"`
+	Version    string `json:"version"`
+	BizContent string `json:"biz_content"`
+}
+
+type C2BQueryBiz struct {
+	OutTradeNo string `json:"out_trade_no"`
+}
+
+type C2BQueryResponse struct {
+	Code        string `json:"code"`
+	Msg         string `json:"msg"`
+	SubCode     string `json:"sub_code"`
+	SubMsg      string `json:"sub_msg"`
+	TradeNo     string `json:"trade_no"`
+	TradeStatus string `json:"trade_status"`
+	TotalAmount string `json:"total_amount"`
+	Subject     string `json:"subject"`
+	GmtCreate   string `json:"gmt_create"`
+	GmtPayment  string `json:"gmt_payment"`
+}
+
 func (s *TelebirrC2BService) CreateH5Payment(orderID string, amount float64, subject, body string) (*models.TelebirrC2BOrder, error) {
 	outTradeNo := fmt.Sprintf("REST_C2B_%s_%d", orderID, time.Now().Unix())
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
@@ -158,6 +213,167 @@ func (s *TelebirrC2BService) callH5PayAPI(orderReq models.TelebirrC2BOrderReques
 	}
 
 	return h5PayResp.H5PayURL, h5PayResp.TradeNo, nil
+}
+
+// RefundC2B performs a refund through Telebirr and updates local state.
+func (s *TelebirrC2BService) RefundC2B(outTradeNo string, refundAmount float64, refundReason string) error {
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	biz := C2BRefundBiz{
+		OutTradeNo:   outTradeNo,
+		RefundAmount: fmt.Sprintf("%.2f", refundAmount),
+		RefundReason: refundReason,
+	}
+	bizJSON, err := json.Marshal(biz)
+	if err != nil {
+		return fmt.Errorf("failed to marshal refund biz: %v", err)
+	}
+
+	req := C2BRefundRequest{
+		AppID:      s.config.AppID,
+		Method:     "telebirr.payment.refund",
+		Format:     "JSON",
+		Charset:    "utf-8",
+		SignType:   "RSA2",
+		Timestamp:  timestamp,
+		Version:    "1.0",
+		BizContent: string(bizJSON),
+	}
+	sign, err := s.generateSignFromMap(map[string]string{
+		"appid":       req.AppID,
+		"method":      req.Method,
+		"format":      req.Format,
+		"charset":     req.Charset,
+		"sign_type":   req.SignType,
+		"timestamp":   req.Timestamp,
+		"version":     req.Version,
+		"biz_content": req.BizContent,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to sign refund: %v", err)
+	}
+	req.Sign = sign
+
+	endpoint := s.config.RefundURL
+	if endpoint == "" {
+		endpoint = s.config.UnifiedOrderURL
+	}
+	form := url.Values{}
+	form.Set("appid", req.AppID)
+	form.Set("method", req.Method)
+	form.Set("format", req.Format)
+	form.Set("charset", req.Charset)
+	form.Set("sign_type", req.SignType)
+	form.Set("sign", req.Sign)
+	form.Set("timestamp", req.Timestamp)
+	form.Set("version", req.Version)
+	form.Set("biz_content", req.BizContent)
+
+	httpReq, err := http.NewRequest("POST", endpoint, strings.NewReader(form.Encode()))
+	if err != nil {
+		return err
+	}
+	httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := s.client.Do(httpReq)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var parsed C2BRefundResponse
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return fmt.Errorf("failed to parse refund response: %v", err)
+	}
+	if parsed.Code != "10000" {
+		return fmt.Errorf("telebirr refund error: %s - %s", parsed.Code, parsed.Msg)
+	}
+
+	// Update local order status to refunded
+	var order models.TelebirrC2BOrder
+	if err := s.db.Where("out_trade_no = ?", outTradeNo).First(&order).Error; err == nil {
+		order.Status = "refunded"
+		_ = s.db.Save(&order).Error
+	}
+	return nil
+}
+
+// QueryC2B queries Telebirr for real-time order status by out_trade_no.
+func (s *TelebirrC2BService) QueryC2B(outTradeNo string) (*C2BQueryResponse, error) {
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	biz := C2BQueryBiz{OutTradeNo: outTradeNo}
+	bizJSON, err := json.Marshal(biz)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal query biz: %v", err)
+	}
+	req := C2BQueryRequest{
+		AppID:      s.config.AppID,
+		Method:     "telebirr.trade.query",
+		Format:     "JSON",
+		Charset:    "utf-8",
+		SignType:   "RSA2",
+		Timestamp:  timestamp,
+		Version:    "1.0",
+		BizContent: string(bizJSON),
+	}
+	sign, err := s.generateSignFromMap(map[string]string{
+		"appid":       req.AppID,
+		"method":      req.Method,
+		"format":      req.Format,
+		"charset":     req.Charset,
+		"sign_type":   req.SignType,
+		"timestamp":   req.Timestamp,
+		"version":     req.Version,
+		"biz_content": req.BizContent,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign query: %v", err)
+	}
+	req.Sign = sign
+
+	endpoint := s.config.QueryURL
+	if endpoint == "" {
+		endpoint = s.config.UnifiedOrderURL
+	}
+	form := url.Values{}
+	form.Set("appid", req.AppID)
+	form.Set("method", req.Method)
+	form.Set("format", req.Format)
+	form.Set("charset", req.Charset)
+	form.Set("sign_type", req.SignType)
+	form.Set("sign", req.Sign)
+	form.Set("timestamp", req.Timestamp)
+	form.Set("version", req.Version)
+	form.Set("biz_content", req.BizContent)
+
+	httpReq, err := http.NewRequest("POST", endpoint, strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := s.client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var parsed C2BQueryResponse
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return nil, fmt.Errorf("failed to parse query response: %v", err)
+	}
+	if parsed.Code != "10000" {
+		return nil, fmt.Errorf("telebirr query error: %s - %s", parsed.Code, parsed.Msg)
+	}
+	return &parsed, nil
 }
 
 func (s *TelebirrC2BService) ProcessC2BNotification(notification map[string]string) error {
