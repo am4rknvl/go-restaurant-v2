@@ -14,7 +14,17 @@ type MenuAPI struct {
 
 func NewMenuAPI(svc *services.MenuSQLService) *MenuAPI { return &MenuAPI{svc: svc} }
 
-// GET /api/v1/restaurant/:restaurant_id/table/:table_id/menu
+// GetQRMenu godoc
+// @Summary Get QR menu
+// @Description Get menu for a specific restaurant table via QR code
+// @Tags menu
+// @Produce json
+// @Param restaurant_id path string true "Restaurant ID"
+// @Param table_id path string true "Table ID"
+// @Param lang query string false "Language code"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} models.ErrorResponse
+// @Router /restaurant/{restaurant_id}/table/{table_id}/menu [get]
 func (h *MenuAPI) GetQRMenu(c *gin.Context) {
 	restaurantID := c.Param("restaurant_id")
 	tableID := c.Param("table_id")

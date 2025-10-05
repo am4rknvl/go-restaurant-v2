@@ -1,1036 +1,3145 @@
-openapi: 3.0.0
-info:
-  title: Restaurant Management System API
-  description: Complete API documentation for Restaurant OS with 120+ endpoints
-  version: 1.0.0
-  contact:
-    name: Restaurant OS Team
-servers:
-  - url: http://localhost:8080/api/v1
-    description: Local development server
-
-components:
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
-  schemas:
-    Error:
-      type: object
-      properties:
-        error:
-          type: string
-        message:
-          type: string
-
-    Order:
-      type: object
-      properties:
-        id:
-          type: string
-        customer_id:
-          type: string
-        table_number:
-          type: integer
-        status:
-          type: string
-          enum: [pending, confirmed, preparing, ready, served, completed, cancelled]
-        total:
-          type: number
+basePath: /api/v1
+definitions:
+  handlers.CreatePaymentRequest:
+    properties:
+      amount:
+        type: number
+      body:
+        type: string
+      order_id:
+        type: string
+      subject:
+        type: string
+    required:
+    - amount
+    - order_id
+    - subject
+    type: object
+  handlers.CreatePaymentResponse:
+    properties:
+      payment_url:
+        type: string
+      prepay_id:
+        type: string
+      status:
+        type: string
+    type: object
+  models.Account:
+    properties:
+      balance:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: string
+      phone_number:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.AccountBalanceResponse:
+    properties:
+      account_id:
+        type: string
+      balance:
+        type: number
+      currency:
+        type: string
+    type: object
+  models.Category:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.CreateAccountRequest:
+    properties:
+      phone_number:
+        type: string
+    required:
+    - phone_number
+    type: object
+  models.CreateOrderItem:
+    properties:
+      menu_item_id:
+        type: string
+      quantity:
+        minimum: 1
+        type: integer
+      special_instructions:
+        type: string
+    required:
+    - menu_item_id
+    - quantity
+    type: object
+  models.CreateOrderRequest:
+    properties:
+      customer_id:
+        type: string
+      items:
         items:
-          type: array
-          items:
-            $ref: '#/components/schemas/OrderItem'
-        created_at:
-          type: string
-          format: date-time
-
-    OrderItem:
-      type: object
-      properties:
-        product_id:
-          type: string
-        product_name:
-          type: string
-        quantity:
-          type: integer
-        price:
-          type: number
-        notes:
-          type: string
-
-    MenuItem:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        price:
-          type: number
-        category_id:
-          type: string
-        emoji:
-          type: string
-        available:
-          type: boolean
-        variants:
-          type: array
-          items:
-            $ref: '#/components/schemas/MenuVariant'
-        addons:
-          type: array
-          items:
-            $ref: '#/components/schemas/MenuAddon'
-
-    MenuVariant:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        price:
-          type: number
-
-    MenuAddon:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        price:
-          type: number
-
-    Category:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        emoji:
-          type: string
-
-    Reservation:
-      type: object
-      properties:
-        id:
-          type: string
-        customer_name:
-          type: string
-        phone:
-          type: string
-        date:
-          type: string
-        time:
-          type: string
-        party_size:
-          type: integer
-        status:
-          type: string
-
-    Payment:
-      type: object
-      properties:
-        id:
-          type: string
-        order_id:
-          type: string
-        amount:
-          type: number
-        method:
-          type: string
-        status:
-          type: string
-
+          $ref: '#/definitions/models.CreateOrderItem'
+        type: array
+      session_id:
+        type: string
+    required:
+    - customer_id
+    - items
+    type: object
+  models.Discount:
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        example: invalid_credentials
+        type: string
+    type: object
+  models.Favorite:
+    properties:
+      account_id:
+        type: string
+      id:
+        type: string
+      menu_item_id:
+        type: string
+    type: object
+  models.InventoryItem:
+    type: object
+  models.LoyaltyAccount:
+    properties:
+      account_id:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      points:
+        type: integer
+      tier:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.MenuAddon:
+    properties:
+      id:
+        type: string
+      item_id:
+        type: string
+      name:
+        type: string
+      price_delta:
+        type: number
+    type: object
+  models.MenuCategory:
+    type: object
+  models.MenuItem:
+    properties:
+      available:
+        type: boolean
+      category:
+        type: string
+      description:
+        type: string
+      description_am:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      name:
+        type: string
+      name_am:
+        type: string
+      price:
+        type: number
+      special_notes:
+        type: string
+    type: object
+  models.MenuItemGorm:
+    type: object
+  models.MenuVariant:
+    properties:
+      id:
+        type: string
+      item_id:
+        type: string
+      name:
+        type: string
+      price_delta:
+        type: number
+    type: object
+  models.Order:
+    properties:
+      created_at:
+        type: string
+      customer_id:
+        type: string
+      id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/models.OrderItem'
+        type: array
+      session_id:
+        type: string
+      status:
+        $ref: '#/definitions/models.OrderStatus'
+      total_amount:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  models.OrderItem:
+    properties:
+      id:
+        type: string
+      menu_item_id:
+        type: string
+      name:
+        type: string
+      order_id:
+        type: string
+      price:
+        type: number
+      quantity:
+        type: integer
+      special_instructions:
+        type: string
+      total_price:
+        type: number
+    type: object
+  models.OrderStatus:
+    enum:
+    - pending
+    - confirmed
+    - preparing
+    - ready
+    - completed
+    - cancelled
+    type: string
+    x-enum-varnames:
+    - OrderStatusPending
+    - OrderStatusConfirmed
+    - OrderStatusPreparing
+    - OrderStatusReady
+    - OrderStatusCompleted
+    - OrderStatusCancelled
+  models.Payment:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: string
+      method:
+        $ref: '#/definitions/models.PaymentMethod'
+      order_id:
+        type: string
+      phone_number:
+        type: string
+      status:
+        $ref: '#/definitions/models.PaymentStatus'
+      transaction_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.PaymentMethod:
+    enum:
+    - mobile_money
+    - cash
+    - card
+    type: string
+    x-enum-varnames:
+    - PaymentMethodMobileMoney
+    - PaymentMethodCash
+    - PaymentMethodCard
+  models.PaymentStatus:
+    enum:
+    - pending
+    - processing
+    - completed
+    - failed
+    - cancelled
+    type: string
+    x-enum-varnames:
+    - PaymentStatusPending
+    - PaymentStatusProcessing
+    - PaymentStatusCompleted
+    - PaymentStatusFailed
+    - PaymentStatusCancelled
+  models.PaymentTip:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: string
+      payment_id:
+        type: string
+    type: object
+  models.Refund:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: string
+      payment_id:
+        type: string
+      reason:
+        type: string
+      status:
+        $ref: '#/definitions/models.RefundStatus'
+      updated_at:
+        type: string
+    type: object
+  models.RefundStatus:
+    enum:
+    - pending
+    - completed
+    - rejected
+    type: string
+    x-enum-varnames:
+    - RefundStatusPending
+    - RefundStatusCompleted
+    - RefundStatusRejected
+  models.RequestOTPRequest:
+    properties:
+      device_id:
+        type: string
+      phone_number:
+        type: string
+    required:
+    - device_id
+    - phone_number
+    type: object
+  models.Reservation:
+    properties:
+      account_id:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      notes:
+        type: string
+      party_size:
+        type: integer
+      reserved_for:
+        type: string
+      status:
+        type: string
+      table_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.Restaurant:
+    type: object
+  models.Review:
+    properties:
+      account_id:
+        type: string
+      comment:
+        type: string
+      id:
+        type: string
+      menu_item_id:
+        type: string
+      rating:
+        type: integer
+    type: object
+  models.Session:
+    properties:
+      closed_at:
+        type: string
+      created_at:
+        type: string
+      customer:
+        type: string
+      id:
+        type: string
+      orders:
+        items:
+          $ref: '#/definitions/models.Order'
+        type: array
+      status:
+        $ref: '#/definitions/models.SessionStatus'
+      table_id:
+        type: string
+    type: object
+  models.SessionStatus:
+    enum:
+    - active
+    - closed
+    type: string
+    x-enum-varnames:
+    - SessionStatusActive
+    - SessionStatusClosed
+  models.Subscription:
+    properties:
+      account_id:
+        type: string
+      created_at:
+        type: string
+      endpoint:
+        type: string
+      id:
+        type: string
+      kind:
+        description: push | sms
+        type: string
+      metadata:
+        type: string
+    type: object
+  models.Table:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      qr_code:
+        type: string
+    type: object
+  models.TokenPairResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  models.TokenResponse:
+    properties:
+      account_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      role:
+        example: customer
+        type: string
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  models.UpdateOrderStatusRequest:
+    properties:
+      status:
+        $ref: '#/definitions/models.OrderStatus'
+    required:
+    - status
+    type: object
+  models.VerifyOTPRequest:
+    properties:
+      code:
+        type: string
+      device_id:
+        type: string
+      phone_number:
+        type: string
+    required:
+    - code
+    - device_id
+    - phone_number
+    type: object
+  models.WaitlistEntry:
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Comprehensive restaurant management system with ordering, payments,
+    inventory, and analytics
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Restaurant Management System API
+  version: "2.0"
 paths:
-  # ==================== AUTH ====================
-  /auth/signup:
+  /accounts:
     post:
-      tags:
-        - Authentication
-      summary: Create new account
-      requestBody:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: Account request
+        in: body
+        name: request
         required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - password
-              properties:
-                name:
-                  type: string
-                email:
-                  type: string
-                phone:
-                  type: string
-                password:
-                  type: string
-                restaurant_name:
-                  type: string
+        schema:
+          $ref: '#/definitions/models.CreateAccountRequest'
+      produces:
+      - application/json
       responses:
-        '201':
-          description: Account created successfully
-        '400':
-          description: Invalid request
-
-  /auth/signin:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new account
+      tags:
+      - accounts
+  /accounts/{id}:
+    get:
+      description: Get account information by ID
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Account'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get account details
+      tags:
+      - enterprise
+    put:
+      consumes:
+      - application/json
+      description: Update account information
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Account update
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            name:
+              type: string
+            phone:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Updated
+      security:
+      - BearerAuth: []
+      summary: Update account
+      tags:
+      - enterprise
+  /accounts/{id}/balance:
+    get:
+      description: Retrieve account balance by ID
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AccountBalanceResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get account balance
+      tags:
+      - accounts
+  /accounts/{id}/loyalty:
+    get:
+      description: Get loyalty points for an account
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoyaltyAccount'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get loyalty account
+      tags:
+      - enterprise
+  /accounts/{id}/loyalty/earn:
     post:
-      tags:
-        - Authentication
-      summary: Sign in with email/phone and password
-      requestBody:
+      consumes:
+      - application/json
+      description: Add loyalty points to an account
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
         required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - identifier
-                - password
-              properties:
-                identifier:
-                  type: string
-                  description: Email or phone number
-                password:
-                  type: string
+        type: string
+      - description: Points to earn
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            points:
+              type: integer
+          type: object
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                  user:
-                    type: object
-
+        "204":
+          description: Points earned
+      security:
+      - BearerAuth: []
+      summary: Earn loyalty points
+      tags:
+      - enterprise
+  /accounts/{id}/roles:
+    post:
+      consumes:
+      - application/json
+      description: Assign a role to a user account
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role assignment
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            restaurant_id:
+              type: string
+            role:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Role assigned
+      security:
+      - BearerAuth: []
+      summary: Assign role to account
+      tags:
+      - enterprise
+  /accounts/{id}/roles/{role}:
+    delete:
+      description: Remove a role from a user account
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role name
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Role removed
+      security:
+      - BearerAuth: []
+      summary: Remove role from account
+      tags:
+      - enterprise
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalidate refresh token and logout
+      parameters:
+      - description: Logout request
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            device_id:
+              type: string
+            refresh_token:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TokenPairResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Logout user
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Get new access and refresh tokens using refresh token
+      parameters:
+      - description: Refresh request
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            device_id:
+              type: string
+            refresh_token:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TokenPairResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - auth
   /auth/request-otp:
     post:
-      tags:
-        - Authentication
-      summary: Request OTP for phone login
-      requestBody:
+      consumes:
+      - application/json
+      description: Send OTP to user's phone number
+      parameters:
+      - description: OTP request
+        in: body
+        name: request
         required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                phone_number:
-                  type: string
-                device_id:
-                  type: string
+        schema:
+          $ref: '#/definitions/models.RequestOTPRequest'
+      produces:
+      - application/json
       responses:
-        '200':
-          description: OTP sent successfully
-
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TokenPairResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Request OTP for authentication
+      tags:
+      - auth
+  /auth/signin:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate with phone and password to receive a JWT token
+      parameters:
+      - description: Signin request
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            password:
+              type: string
+            phone:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns token, account_id, and role
+          schema:
+            $ref: '#/definitions/models.TokenResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Sign in to an existing account
+      tags:
+      - auth
+  /auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account with phone and password
+      parameters:
+      - description: Signup request
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            password:
+              type: string
+            phone:
+              type: string
+            role:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Account created successfully
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Sign up a new user
+      tags:
+      - auth
   /auth/verify-otp:
     post:
-      tags:
-        - Authentication
+      consumes:
+      - application/json
+      description: Verify OTP and receive access and refresh tokens
+      parameters:
+      - description: OTP verification
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.VerifyOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TokenPairResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Verify OTP code
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                phone_number:
-                  type: string
-                code:
-                  type: string
-                device_id:
-                  type: string
-      responses:
-        '200':
-          description: OTP verified, login successful
-
-  # ==================== ORDERS ====================
-  /orders:
+      tags:
+      - auth
+  /branches/{branchId}/waitlist:
     post:
-      tags:
-        - Orders
-      summary: Create new order
-      security:
-        - BearerAuth: []
-      requestBody:
+      consumes:
+      - application/json
+      description: Add customer to restaurant waitlist
+      parameters:
+      - description: Branch ID
+        in: path
+        name: branchId
         required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                table_id:
-                  type: string
-                items:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/OrderItem'
-                total:
-                  type: number
+        type: string
+      produces:
+      - application/json
       responses:
-        '201':
-          description: Order created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-
-    get:
-      tags:
-        - Orders
-      summary: List all orders
+        "501":
+          description: Not Implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
-        - BearerAuth: []
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-        - name: customer_id
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: List of orders
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Order'
-
-  /orders/{id}:
-    get:
+      - BearerAuth: []
+      summary: Join waitlist
       tags:
-        - Orders
-      summary: Get order by ID
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Order details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-
-  /orders/{id}/status:
-    put:
-      tags:
-        - Orders
-      summary: Update order status
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  type: string
-      responses:
-        '200':
-          description: Status updated
-
-  /orders/{id}/reorder:
-    post:
-      tags:
-        - Orders
-      summary: Reorder a previous order
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '201':
-          description: New order created
-
-  # ==================== MENU ====================
-  /menu/categories:
-    get:
-      tags:
-        - Menu
-      summary: List all categories
-      responses:
-        '200':
-          description: List of categories
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Category'
-
-    post:
-      tags:
-        - Menu
-      summary: Create new category
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                description:
-                  type: string
-                emoji:
-                  type: string
-      responses:
-        '201':
-          description: Category created
-
-  /menu/categories/{id}:
-    get:
-      tags:
-        - Menu
-      summary: Get category by ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Category details
-
-    put:
-      tags:
-        - Menu
-      summary: Update category
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                description:
-                  type: string
-      responses:
-        '200':
-          description: Category updated
-
-    delete:
-      tags:
-        - Menu
-      summary: Delete category
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Category deleted
-
-  /menu/items:
-    get:
-      tags:
-        - Menu
-      summary: List menu items
-      parameters:
-        - name: category
-          in: query
-          schema:
-            type: string
-        - name: available
-          in: query
-          schema:
-            type: boolean
-      responses:
-        '200':
-          description: List of menu items
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MenuItem'
-
-    post:
-      tags:
-        - Menu
-      summary: Create menu item
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MenuItem'
-      responses:
-        '201':
-          description: Menu item created
-
-  /menu/items/{id}:
-    get:
-      tags:
-        - Menu
-      summary: Get menu item by ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Menu item details
-
-    put:
-      tags:
-        - Menu
-      summary: Update menu item
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MenuItem'
-      responses:
-        '200':
-          description: Menu item updated
-
-    delete:
-      tags:
-        - Menu
-      summary: Delete menu item
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Menu item deleted
-
-  /menu/items/{id}/availability:
+      - customer
+  /branches/{branchId}/waitlist/{entryId}:
     patch:
-      tags:
-        - Menu
-      summary: Toggle menu item availability
-      security:
-        - BearerAuth: []
+      consumes:
+      - application/json
+      description: Update customer's waitlist entry
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
+      - description: Branch ID
+        in: path
+        name: branchId
         required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                available:
-                  type: boolean
+        type: string
+      - description: Entry ID
+        in: path
+        name: entryId
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Availability updated
-
-  # ==================== KITCHEN ====================
+        "501":
+          description: Not Implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update waitlist entry
+      tags:
+      - customer
+  /categories:
+    get:
+      description: Get all menu categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List categories
+      tags:
+      - categories
+    post:
+      consumes:
+      - application/json
+      description: Create a new menu category
+      parameters:
+      - description: Category request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Category'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Category'
+      security:
+      - BearerAuth: []
+      summary: Create a category
+      tags:
+      - categories
+  /categories/{id}:
+    delete:
+      description: Delete a menu category
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Deleted
+      security:
+      - BearerAuth: []
+      summary: Delete a category
+      tags:
+      - categories
+    put:
+      consumes:
+      - application/json
+      description: Update menu category details
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Category update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Category'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Category'
+      security:
+      - BearerAuth: []
+      summary: Update a category
+      tags:
+      - categories
+  /discounts:
+    post:
+      consumes:
+      - application/json
+      description: Create a new discount code
+      parameters:
+      - description: Discount
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Discount'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Discount'
+      security:
+      - BearerAuth: []
+      summary: Create discount
+      tags:
+      - enterprise
+  /discounts/apply:
+    post:
+      consumes:
+      - application/json
+      description: Apply a discount code to an order
+      parameters:
+      - description: Discount application
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            account_id:
+              type: string
+            code:
+              type: string
+            order_id:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Apply discount code
+      tags:
+      - enterprise
+  /favorites:
+    post:
+      consumes:
+      - application/json
+      description: Add a menu item to user's favorites
+      parameters:
+      - description: Favorite request
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            menu_item_id:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Favorite'
+      security:
+      - BearerAuth: []
+      summary: Add favorite menu item
+      tags:
+      - favorites
+  /favorites/{menu_item_id}:
+    delete:
+      description: Remove a menu item from user's favorites
+      parameters:
+      - description: Menu Item ID
+        in: path
+        name: menu_item_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Removed
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove favorite menu item
+      tags:
+      - favorites
+  /inventory:
+    get:
+      description: Get all inventory items
+      parameters:
+      - description: Filter by restaurant ID
+        in: query
+        name: restaurant_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List inventory items
+      tags:
+      - enterprise
+    post:
+      consumes:
+      - application/json
+      description: Add a new inventory item
+      parameters:
+      - description: Inventory item
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.InventoryItem'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.InventoryItem'
+      security:
+      - BearerAuth: []
+      summary: Create inventory item
+      tags:
+      - enterprise
+  /inventory/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Update inventory item details
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Item update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.InventoryItem'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.InventoryItem'
+      security:
+      - BearerAuth: []
+      summary: Update inventory item
+      tags:
+      - enterprise
+  /inventory/{id}/adjust:
+    patch:
+      consumes:
+      - application/json
+      description: Adjust inventory item quantity
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Adjustment
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            delta:
+              type: number
+            reason:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Adjusted
+      security:
+      - BearerAuth: []
+      summary: Adjust inventory quantity
+      tags:
+      - enterprise
+  /kitchen/notifications/send:
+    post:
+      consumes:
+      - application/json
+      description: Send a push notification (staff/admin)
+      parameters:
+      - description: Notification payload
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            message:
+              type: string
+            subscription:
+              $ref: '#/definitions/models.Subscription'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Notification sent
+      security:
+      - BearerAuth: []
+      summary: Send notification
+      tags:
+      - notifications
   /kitchen/orders:
     get:
-      tags:
-        - Kitchen
-      summary: List pending kitchen orders
-      security:
-        - BearerAuth: []
+      description: Get all pending orders for kitchen
+      produces:
+      - application/json
       responses:
-        '200':
-          description: List of pending orders
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Order'
-
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List pending kitchen orders
+      tags:
+      - kitchen
   /kitchen/orders/{id}/status:
     put:
-      tags:
-        - Kitchen
+      consumes:
+      - application/json
+      description: Update order status from kitchen
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateOrderStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Order'
+      security:
+      - BearerAuth: []
       summary: Update kitchen order status
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  type: string
-      responses:
-        '200':
-          description: Status updated
-
-  # ==================== RESERVATIONS ====================
-  /reservations:
-    get:
       tags:
-        - Reservations
-      summary: List reservations
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: date
-          in: query
-          schema:
-            type: string
-        - name: status
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: List of reservations
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Reservation'
-
-    post:
-      tags:
-        - Reservations
-      summary: Create reservation
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Reservation'
-      responses:
-        '201':
-          description: Reservation created
-
-  /reservations/{id}:
-    put:
-      tags:
-        - Reservations
-      summary: Update reservation
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Reservation'
-      responses:
-        '200':
-          description: Reservation updated
-
-    delete:
-      tags:
-        - Reservations
-      summary: Cancel reservation
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Reservation cancelled
-
-  # ==================== PAYMENTS ====================
-  /payments:
-    post:
-      tags:
-        - Payments
-      summary: Create payment
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                order_id:
-                  type: string
-                amount:
-                  type: number
-                method:
-                  type: string
-      responses:
-        '201':
-          description: Payment created
-
-  /payments/{id}:
-    get:
-      tags:
-        - Payments
-      summary: Get payment by ID
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Payment details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Payment'
-
-  /payments/telebirr/c2b/create:
-    post:
-      tags:
-        - Payments - Telebirr
-      summary: Create Telebirr C2B payment
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                order_id:
-                  type: string
-                amount:
-                  type: number
-      responses:
-        '201':
-          description: Payment initiated
-
-  /payments/telebirr/c2b/status/{out_trade_no}:
-    get:
-      tags:
-        - Payments - Telebirr
-      summary: Get Telebirr C2B payment status
-      parameters:
-        - name: out_trade_no
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Payment status
-
-  # ==================== CUSTOMER ====================
-  /me:
-    get:
-      tags:
-        - Customer
-      summary: Get current user profile
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: User profile
-
-    patch:
-      tags:
-        - Customer
-      summary: Update user profile
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                email:
-                  type: string
-                phone:
-                  type: string
-      responses:
-        '200':
-          description: Profile updated
-
+      - kitchen
   /loyalty:
     get:
-      tags:
-        - Customer - Loyalty
-      summary: Get loyalty points
-      security:
-        - BearerAuth: []
+      description: Get user's loyalty points balance
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Loyalty account details
-
+        "501":
+          description: Not Implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get loyalty points
+      tags:
+      - customer
   /loyalty/redeem:
     post:
-      tags:
-        - Customer - Loyalty
+      consumes:
+      - application/json
+      description: Redeem loyalty points for rewards
+      produces:
+      - application/json
+      responses:
+        "501":
+          description: Not Implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
       summary: Redeem loyalty points
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                points:
-                  type: integer
-      responses:
-        '200':
-          description: Points redeemed
-
-  # ==================== TABLES ====================
-  /tables:
+      tags:
+      - customer
+  /me:
     get:
-      tags:
-        - Tables
-      summary: List all tables
-      security:
-        - BearerAuth: []
+      description: Get authenticated user's profile
+      produces:
+      - application/json
       responses:
-        '200':
-          description: List of tables
-
-    post:
-      tags:
-        - Tables
-      summary: Create new table
+        "501":
+          description: Not Implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                number:
-                  type: integer
-                capacity:
-                  type: integer
-      responses:
-        '201':
-          description: Table created
-
-  /tables/{id}/state:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - customer
     patch:
-      tags:
-        - Tables
-      summary: Update table state
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
+      consumes:
+      - application/json
+      description: Update authenticated user's profile
+      produces:
+      - application/json
+      responses:
+        "501":
+          description: Not Implemented
           schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                state:
-                  type: string
-                  enum: [available, occupied, reserved, cleaning]
-      responses:
-        '200':
-          description: Table state updated
-
-  # ==================== STAFF ====================
-  /staff/assignments:
-    get:
-      tags:
-        - Staff
-      summary: List staff assignments
+            additionalProperties:
+              type: string
+            type: object
       security:
-        - BearerAuth: []
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - customer
+  /menu/addons/{id}:
+    delete:
+      description: Delete an addon
+      parameters:
+      - description: Addon ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
-        '200':
-          description: List of staff assignments
-
-  /staff/branches/{branchId}/tables/{tableId}/assign:
+        "204":
+          description: Deleted
+      security:
+      - BearerAuth: []
+      summary: Delete menu addon
+      tags:
+      - menu
+    put:
+      consumes:
+      - application/json
+      description: Update addon details
+      parameters:
+      - description: Addon ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Addon update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.MenuAddon'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MenuAddon'
+      security:
+      - BearerAuth: []
+      summary: Update menu addon
+      tags:
+      - menu
+  /menu/categories:
+    get:
+      description: Get all menu categories
+      parameters:
+      - description: Filter by restaurant ID
+        in: query
+        name: restaurant_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List menu categories
+      tags:
+      - menu
     post:
-      tags:
-        - Staff
-      summary: Assign waiter to table
-      security:
-        - BearerAuth: []
+      consumes:
+      - application/json
+      description: Create a new menu category
       parameters:
-        - name: branchId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: tableId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
+      - description: Category request
+        in: body
+        name: request
         required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                waiter_id:
-                  type: string
+        schema:
+          $ref: '#/definitions/models.MenuCategory'
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Waiter assigned
-
-  # ==================== REPORTS ====================
-  /reports/sales:
-    get:
-      tags:
-        - Reports
-      summary: Get sales report
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.MenuCategory'
       security:
-        - BearerAuth: []
+      - BearerAuth: []
+      summary: Create menu category
+      tags:
+      - menu
+  /menu/categories/{id}:
+    delete:
+      description: Delete a category
       parameters:
-        - name: start_date
-          in: query
-          schema:
-            type: string
-        - name: end_date
-          in: query
-          schema:
-            type: string
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Sales report data
-
+        "204":
+          description: Deleted
+      security:
+      - BearerAuth: []
+      summary: Delete menu category
+      tags:
+      - menu
+    get:
+      description: Retrieve menu category details
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MenuCategory'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get category by ID
+      tags:
+      - menu
+    put:
+      consumes:
+      - application/json
+      description: Update category details
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Category update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.MenuCategory'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MenuCategory'
+      security:
+      - BearerAuth: []
+      summary: Update menu category
+      tags:
+      - menu
+  /menu/item:
+    post:
+      consumes:
+      - application/json
+      description: Create a new menu item (admin route)
+      parameters:
+      - description: Menu item request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.MenuItem'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.MenuItem'
+      security:
+      - BearerAuth: []
+      summary: Create menu item (admin)
+      tags:
+      - menu-admin
+  /menu/item/{id}:
+    delete:
+      description: Delete a menu item (admin route)
+      parameters:
+      - description: Menu Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Deleted
+      security:
+      - BearerAuth: []
+      summary: Delete menu item (admin)
+      tags:
+      - menu-admin
+    put:
+      consumes:
+      - application/json
+      description: Update menu item details (admin route)
+      parameters:
+      - description: Menu Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Menu item update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.MenuItem'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MenuItem'
+      security:
+      - BearerAuth: []
+      summary: Update menu item (admin)
+      tags:
+      - menu-admin
+  /menu/items:
+    get:
+      description: Get all menu items
+      parameters:
+      - description: Filter by restaurant ID
+        in: query
+        name: restaurant_id
+        type: string
+      - description: Filter by category ID
+        in: query
+        name: category_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List menu items
+      tags:
+      - menu
+    post:
+      consumes:
+      - application/json
+      description: Create a new menu item
+      parameters:
+      - description: Menu item request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.MenuItemGorm'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.MenuItemGorm'
+      security:
+      - BearerAuth: []
+      summary: Create menu item
+      tags:
+      - menu
+  /menu/items/{id}:
+    delete:
+      description: Delete a menu item
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Deleted
+      security:
+      - BearerAuth: []
+      summary: Delete menu item
+      tags:
+      - menu
+    get:
+      description: Retrieve menu item details
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MenuItemGorm'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get menu item by ID
+      tags:
+      - menu
+    put:
+      consumes:
+      - application/json
+      description: Update menu item details
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Item update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.MenuItemGorm'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MenuItemGorm'
+      security:
+      - BearerAuth: []
+      summary: Update menu item
+      tags:
+      - menu
+  /menu/items/{id}/addons:
+    post:
+      consumes:
+      - application/json
+      description: Create an addon for a menu item
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Addon request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.MenuAddon'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.MenuAddon'
+      security:
+      - BearerAuth: []
+      summary: Create menu item addon
+      tags:
+      - menu
+  /menu/items/{id}/availability:
+    patch:
+      consumes:
+      - application/json
+      description: Update menu item availability status
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Availability update
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            available:
+              type: boolean
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Updated
+      security:
+      - BearerAuth: []
+      summary: Update item availability
+      tags:
+      - menu
+  /menu/items/{id}/variants:
+    post:
+      consumes:
+      - application/json
+      description: Create a variant for a menu item
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Variant request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.MenuVariant'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.MenuVariant'
+      security:
+      - BearerAuth: []
+      summary: Create menu item variant
+      tags:
+      - menu
+  /menu/variants/{id}:
+    delete:
+      description: Delete a variant
+      parameters:
+      - description: Variant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Deleted
+      security:
+      - BearerAuth: []
+      summary: Delete menu variant
+      tags:
+      - menu
+    put:
+      consumes:
+      - application/json
+      description: Update variant details
+      parameters:
+      - description: Variant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Variant update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.MenuVariant'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MenuVariant'
+      security:
+      - BearerAuth: []
+      summary: Update menu variant
+      tags:
+      - menu
+  /notifications/{id}:
+    delete:
+      description: Remove notification subscription
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Unsubscribed
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Unsubscribe from notifications
+      tags:
+      - notifications
+  /notifications/account/{account_id}:
+    get:
+      description: Get all notification subscriptions for an account
+      parameters:
+      - description: Account ID
+        in: path
+        name: account_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List notifications for account
+      tags:
+      - notifications
+  /notifications/subscribe:
+    post:
+      consumes:
+      - application/json
+      description: Subscribe to push notifications
+      parameters:
+      - description: Subscription request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Subscription'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Subscription'
+      security:
+      - BearerAuth: []
+      summary: Subscribe to notifications
+      tags:
+      - notifications
+  /orders:
+    get:
+      description: Get a list of all orders
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List all orders
+      tags:
+      - orders
+    post:
+      consumes:
+      - application/json
+      description: Create a new order with items for a customer
+      parameters:
+      - description: Order request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Order'
+      summary: Create a new order
+      tags:
+      - orders
+  /orders/{id}:
+    get:
+      description: Retrieve order details by order ID
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Order'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get order by ID
+      tags:
+      - orders
+  /orders/{id}/assign-chef:
+    post:
+      consumes:
+      - application/json
+      description: Assign a chef to prepare an order
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Assignment
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            chef_id:
+              type: string
+            restaurant_id:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Assigned
+      security:
+      - BearerAuth: []
+      summary: Assign chef to order
+      tags:
+      - enterprise
+  /orders/{id}/merge:
+    post:
+      consumes:
+      - application/json
+      description: Merge multiple orders into one
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Merge orders
+      tags:
+      - enterprise
+  /orders/{id}/split:
+    post:
+      consumes:
+      - application/json
+      description: Split an order into multiple orders
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Split an order
+      tags:
+      - enterprise
+  /orders/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Update the status of an existing order
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateOrderStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Order'
+      summary: Update order status
+      tags:
+      - orders
+  /payments:
+    post:
+      consumes:
+      - application/json
+      description: Create a new payment for an order
+      parameters:
+      - description: Payment request
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            amount_cents:
+              type: integer
+            order_id:
+              type: integer
+            provider:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Payment'
+      summary: Create a payment
+      tags:
+      - payments
+  /payments/{id}:
+    get:
+      description: Retrieve payment details
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Payment'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get payment by ID
+      tags:
+      - payments
+  /payments/{id}/refund:
+    post:
+      consumes:
+      - application/json
+      description: Request a refund for a payment
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Refund request
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            amount:
+              type: number
+            reason:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Refund'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Request payment refund
+      tags:
+      - payments
+  /payments/{id}/tip:
+    post:
+      consumes:
+      - application/json
+      description: Add a tip amount to a payment
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tip amount
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            amount:
+              type: number
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PaymentTip'
+      security:
+      - BearerAuth: []
+      summary: Add tip to payment
+      tags:
+      - enterprise
+  /payments/partial:
+    post:
+      consumes:
+      - application/json
+      description: Apply a partial payment to an order
+      parameters:
+      - description: Partial payment
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            amount:
+              type: number
+            order_id:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Payment applied
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Apply partial payment
+      tags:
+      - payments
+  /payments/telebirr/b2b/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new Telebirr B2B payment for an order
+      parameters:
+      - description: Payment request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreatePaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.CreatePaymentResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Telebirr B2B payment
+      tags:
+      - telebirr-b2b
+  /payments/telebirr/b2b/notify:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Webhook endpoint for Telebirr payment notifications
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: success
+          schema:
+            type: string
+      summary: Handle Telebirr payment notification
+      tags:
+      - telebirr-b2b
+  /payments/telebirr/b2b/orders/{order_id}:
+    get:
+      description: Get all Telebirr payments for an order
+      parameters:
+      - description: Order ID
+        in: path
+        name: order_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get order payments
+      tags:
+      - telebirr-b2b
+  /payments/telebirr/b2b/refund:
+    post:
+      consumes:
+      - application/json
+      description: Process a refund for a Telebirr B2B payment
+      parameters:
+      - description: Refund request
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            prepay_id:
+              type: string
+            refund_amount:
+              type: number
+            refund_reason:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Refund Telebirr payment
+      tags:
+      - telebirr-b2b
+  /payments/telebirr/b2b/return:
+    get:
+      description: Handle user return from Telebirr payment page
+      parameters:
+      - description: Prepay ID
+        in: query
+        name: prepay_id
+        required: true
+        type: string
+      - description: Trade status
+        in: query
+        name: trade_status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Handle Telebirr payment return
+      tags:
+      - telebirr-b2b
+  /payments/telebirr/b2b/status/{prepay_id}:
+    get:
+      description: Get the status of a Telebirr B2B payment
+      parameters:
+      - description: Prepay ID
+        in: path
+        name: prepay_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get Telebirr payment status
+      tags:
+      - telebirr-b2b
+  /promo/apply:
+    post:
+      consumes:
+      - application/json
+      description: Apply a promotional code to order
+      produces:
+      - application/json
+      responses:
+        "501":
+          description: Not Implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Apply promo code
+      tags:
+      - customer
+  /reports/customers/top:
+    get:
+      description: Get top spending customers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get top customers report
+      tags:
+      - enterprise
   /reports/popular-items:
     get:
-      tags:
-        - Reports
-      summary: Get popular items report
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: limit
-          in: query
-          schema:
-            type: integer
+      description: Get most popular menu items
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Popular items list
-
-tags:
-  - name: Authentication
-    description: User authentication and authorization
-  - name: Orders
-    description: Order management
-  - name: Menu
-    description: Menu items and categories
-  - name: Kitchen
-    description: Kitchen display and order preparation
-  - name: Reservations
-    description: Table reservations
-  - name: Payments
-    description: Payment processing
-  - name: Payments - Telebirr
-    description: Telebirr payment integration
-  - name: Customer
-    description: Customer profile and features
-  - name: Customer - Loyalty
-    description: Loyalty points and rewards
-  - name: Tables
-    description: Table management
-  - name: Staff
-    description: Staff operations
-  - name: Reports
-    description: Analytics and reporting
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get popular items report
+      tags:
+      - enterprise
+  /reports/sales:
+    get:
+      description: Get sales analytics and reports
+      parameters:
+      - description: Date range
+        in: query
+        name: range
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get sales report
+      tags:
+      - enterprise
+  /reservations:
+    get:
+      description: Get all upcoming reservations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List reservations
+      tags:
+      - reservations
+    post:
+      consumes:
+      - application/json
+      description: Create a new table reservation
+      parameters:
+      - description: Reservation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Reservation'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Reservation'
+      summary: Create a reservation
+      tags:
+      - reservations
+  /reservations/{id}:
+    delete:
+      description: Cancel an existing reservation
+      parameters:
+      - description: Reservation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reservation cancelled
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Cancel a reservation
+      tags:
+      - reservations
+    put:
+      consumes:
+      - application/json
+      description: Update reservation details
+      parameters:
+      - description: Reservation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Reservation update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Reservation'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Reservation'
+      summary: Update a reservation
+      tags:
+      - reservations
+  /restaurant/{restaurant_id}/table/{table_id}/menu:
+    get:
+      description: Get menu for a specific restaurant table via QR code
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: restaurant_id
+        required: true
+        type: string
+      - description: Table ID
+        in: path
+        name: table_id
+        required: true
+        type: string
+      - description: Language code
+        in: query
+        name: lang
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get QR menu
+      tags:
+      - menu
+  /restaurants:
+    get:
+      description: Get all restaurants
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List restaurants
+      tags:
+      - enterprise
+    post:
+      consumes:
+      - application/json
+      description: Create a new restaurant
+      parameters:
+      - description: Restaurant
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Restaurant'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Restaurant'
+      security:
+      - BearerAuth: []
+      summary: Create restaurant
+      tags:
+      - enterprise
+  /restaurants/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Update restaurant details
+      parameters:
+      - description: Restaurant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Restaurant update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Restaurant'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Restaurant'
+      security:
+      - BearerAuth: []
+      summary: Update restaurant
+      tags:
+      - enterprise
+  /reviews:
+    post:
+      consumes:
+      - application/json
+      description: Create a review for a menu item
+      parameters:
+      - description: Review request
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            comment:
+              type: string
+            menu_item_id:
+              type: string
+            rating:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Review'
+      security:
+      - BearerAuth: []
+      summary: Create a review
+      tags:
+      - reviews
+  /sessions:
+    post:
+      consumes:
+      - application/json
+      description: Start a new dining session for a table
+      parameters:
+      - description: Session request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Session'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Session'
+      security:
+      - BearerAuth: []
+      summary: Start a table session
+      tags:
+      - sessions
+  /sessions/{id}:
+    get:
+      description: Retrieve session details
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Session'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get session by ID
+      tags:
+      - sessions
+  /sessions/{id}/close:
+    put:
+      description: Close an active dining session
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Session closed
+      security:
+      - BearerAuth: []
+      summary: Close a session
+      tags:
+      - sessions
+  /staff/assignments:
+    get:
+      description: Get all staff assignments
+      parameters:
+      - description: Filter by restaurant ID
+        in: query
+        name: restaurant_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List staff assignments
+      tags:
+      - enterprise
+  /staff/branches/{branchId}/orders/{orderId}/assign-chef:
+    post:
+      consumes:
+      - application/json
+      description: Assign a chef to prepare an order
+      parameters:
+      - description: Branch ID
+        in: path
+        name: branchId
+        required: true
+        type: string
+      - description: Order ID
+        in: path
+        name: orderId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "501":
+          description: Not Implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Assign chef to order
+      tags:
+      - staff
+  /staff/branches/{branchId}/orders/{orderId}/split:
+    post:
+      consumes:
+      - application/json
+      description: Split an order into multiple orders
+      parameters:
+      - description: Branch ID
+        in: path
+        name: branchId
+        required: true
+        type: string
+      - description: Order ID
+        in: path
+        name: orderId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "501":
+          description: Not Implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Split an order
+      tags:
+      - staff
+  /staff/branches/{branchId}/orders/{orderId}/tip:
+    post:
+      consumes:
+      - application/json
+      description: Add a tip amount to an order
+      parameters:
+      - description: Branch ID
+        in: path
+        name: branchId
+        required: true
+        type: string
+      - description: Order ID
+        in: path
+        name: orderId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "501":
+          description: Not Implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add tip to order
+      tags:
+      - staff
+  /staff/branches/{branchId}/orders/merge:
+    post:
+      consumes:
+      - application/json
+      description: Merge multiple orders into one
+      parameters:
+      - description: Branch ID
+        in: path
+        name: branchId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "501":
+          description: Not Implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Merge orders
+      tags:
+      - staff
+  /staff/branches/{branchId}/tables/{tableId}/assign:
+    post:
+      consumes:
+      - application/json
+      description: Assign a waiter to a specific table
+      parameters:
+      - description: Branch ID
+        in: path
+        name: branchId
+        required: true
+        type: string
+      - description: Table ID
+        in: path
+        name: tableId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "501":
+          description: Not Implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Assign waiter to table
+      tags:
+      - staff
+  /staff/branches/{branchId}/tables/{tableId}/state:
+    patch:
+      consumes:
+      - application/json
+      description: Update the state of a table (staff)
+      parameters:
+      - description: Branch ID
+        in: path
+        name: branchId
+        required: true
+        type: string
+      - description: Table ID
+        in: path
+        name: tableId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "501":
+          description: Not Implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update table state
+      tags:
+      - staff
+  /tables:
+    get:
+      description: Get a list of all restaurant tables
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all tables
+      tags:
+      - tables
+    post:
+      consumes:
+      - application/json
+      description: Create a new restaurant table
+      parameters:
+      - description: Table request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Table'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Table'
+      security:
+      - BearerAuth: []
+      summary: Create a new table
+      tags:
+      - tables
+  /tables/{id}:
+    get:
+      description: Retrieve table details by ID
+      parameters:
+      - description: Table ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Table'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get table by ID
+      tags:
+      - tables
+  /tables/{id}/state:
+    patch:
+      consumes:
+      - application/json
+      description: Update the state of a table
+      parameters:
+      - description: Table ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: State update
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            state:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Updated
+      security:
+      - BearerAuth: []
+      summary: Update table state
+      tags:
+      - enterprise
+  /tables/{table_id}/assign-waiter:
+    post:
+      consumes:
+      - application/json
+      description: Assign a waiter to a specific table
+      parameters:
+      - description: Table ID
+        in: path
+        name: table_id
+        required: true
+        type: string
+      - description: Assignment
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            restaurant_id:
+              type: string
+            waiter_id:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Assigned
+      security:
+      - BearerAuth: []
+      summary: Assign waiter to table
+      tags:
+      - enterprise
+  /waitlist:
+    get:
+      description: Get all waitlist entries
+      parameters:
+      - description: Filter by restaurant ID
+        in: query
+        name: restaurant_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List waitlist
+      tags:
+      - enterprise
+    post:
+      consumes:
+      - application/json
+      description: Add customer to restaurant waitlist
+      parameters:
+      - description: Waitlist entry
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.WaitlistEntry'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.WaitlistEntry'
+      summary: Join waitlist
+      tags:
+      - enterprise
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

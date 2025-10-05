@@ -15,7 +15,17 @@ type ReviewsAPI struct{ svc *services.MenuSQLService }
 
 func NewReviewsAPI(svc *services.MenuSQLService) *ReviewsAPI { return &ReviewsAPI{svc: svc} }
 
-// POST /api/v1/reviews
+// CreateReview godoc
+// @Summary Create a review
+// @Description Create a review for a menu item
+// @Tags reviews
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body object{menu_item_id=string,rating=int,comment=string} true "Review request"
+// @Success 201 {object} models.Review
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /reviews [post]
 func (h *ReviewsAPI) CreateReview(c *gin.Context) {
 	var body struct {
 		MenuItemID string `json:"menu_item_id" binding:"required"`

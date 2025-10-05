@@ -16,6 +16,16 @@ func NewAuthBasicHandler(svc *services.AuthBasicService) *AuthBasicHandler {
 	return &AuthBasicHandler{svc: svc}
 }
 
+// Signup godoc
+// @Summary Sign up a new user
+// @Description Create a new user account with phone and password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body object{phone=string,password=string,role=string} true "Signup request"
+// @Success 201 "Account created successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid request"
+// @Router /auth/signup [post]
 func (h *AuthBasicHandler) Signup(c *gin.Context) {
 	var b struct {
 		Phone    string `json:"phone" binding:"required"`
@@ -33,6 +43,17 @@ func (h *AuthBasicHandler) Signup(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
+// Signin godoc
+// @Summary Sign in to an existing account
+// @Description Authenticate with phone and password to receive a JWT token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body object{phone=string,password=string} true "Signin request"
+// @Success 200 {object} models.TokenResponse "Returns token, account_id, and role"
+// @Failure 400 {object} models.ErrorResponse "Invalid request"
+// @Failure 401 {object} models.ErrorResponse "Invalid credentials"
+// @Router /auth/signin [post]
 func (h *AuthBasicHandler) Signin(c *gin.Context) {
 	var b struct {
 		Phone    string `json:"phone" binding:"required"`
