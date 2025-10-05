@@ -20,7 +20,16 @@ func NewOrderAPI(svc *services.OrderSQLService, hub *websocket.Hub) *OrderAPI {
 	return &OrderAPI{svc: svc, hub: hub}
 }
 
-// POST /api/v1/orders
+// CreateOrder godoc
+// @Summary Create a new order
+// @Description Create a new order with items for a customer
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param request body models.CreateOrderRequest true "Order request"
+// @Success 201 {object} models.Order
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /orders [post]
 func (h *OrderAPI) CreateOrder(c *gin.Context) {
 	var req models.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -146,7 +155,15 @@ func (h *OrderAPI) Reorder(c *gin.Context) {
 	c.JSON(http.StatusCreated, ord)
 }
 
-// GET /api/v1/orders/:id
+// GetOrder godoc
+// @Summary Get order by ID
+// @Description Retrieve order details by order ID
+// @Tags orders
+// @Produce json
+// @Param id path string true "Order ID"
+// @Success 200 {object} models.Order
+// @Failure 404 {object} models.ErrorResponse
+// @Router /orders/{id} [get]
 func (h *OrderAPI) GetOrder(c *gin.Context) {
 	id := c.Param("id")
 	ord, err := h.svc.GetOrder(c.Request.Context(), id)
@@ -157,7 +174,14 @@ func (h *OrderAPI) GetOrder(c *gin.Context) {
 	c.JSON(http.StatusOK, ord)
 }
 
-// GET /api/v1/orders
+// ListOrders godoc
+// @Summary List all orders
+// @Description Get a list of all orders
+// @Tags orders
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} models.ErrorResponse
+// @Router /orders [get]
 func (h *OrderAPI) ListOrders(c *gin.Context) {
 	res, err := h.svc.ListOrders(c.Request.Context())
 	if err != nil {
@@ -167,7 +191,17 @@ func (h *OrderAPI) ListOrders(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"orders": res})
 }
 
-// PUT /api/v1/orders/:id/status
+// UpdateOrderStatus godoc
+// @Summary Update order status
+// @Description Update the status of an existing order
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param id path string true "Order ID"
+// @Param request body models.UpdateOrderStatusRequest true "Status update request"
+// @Success 200 {object} models.Order
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /orders/{id}/status [put]
 func (h *OrderAPI) UpdateOrderStatus(c *gin.Context) {
 	id := c.Param("id")
 	var body models.UpdateOrderStatusRequest

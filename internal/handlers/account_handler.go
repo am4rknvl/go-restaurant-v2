@@ -18,6 +18,16 @@ func NewAccountHandler(accountService *services.AccountService) *AccountHandler 
 	}
 }
 
+// CreateAccount godoc
+// @Summary Create a new account
+// @Description Create a new user account
+// @Tags accounts
+// @Accept json
+// @Produce json
+// @Param request body models.CreateAccountRequest true "Account request"
+// @Success 201 {object} map[string]interface{}
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /accounts [post]
 func (h *AccountHandler) CreateAccount(c *gin.Context) {
 	var req models.CreateAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -37,6 +47,15 @@ func (h *AccountHandler) CreateAccount(c *gin.Context) {
 	})
 }
 
+// GetAccountBalance godoc
+// @Summary Get account balance
+// @Description Retrieve account balance by ID
+// @Tags accounts
+// @Produce json
+// @Param id path string true "Account ID"
+// @Success 200 {object} models.AccountBalanceResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Router /accounts/{id}/balance [get]
 func (h *AccountHandler) GetAccountBalance(c *gin.Context) {
 	accountID := c.Param("id")
 	if accountID == "" {

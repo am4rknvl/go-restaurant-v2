@@ -15,7 +15,15 @@ type KitchenAPI struct {
 
 func NewKitchenAPI(svc *services.OrderSQLService) *KitchenAPI { return &KitchenAPI{svc: svc} }
 
-// GET /api/v1/kitchen/orders
+// ListPending godoc
+// @Summary List pending kitchen orders
+// @Description Get all pending orders for kitchen
+// @Tags kitchen
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} models.ErrorResponse
+// @Router /kitchen/orders [get]
 func (h *KitchenAPI) ListPending(c *gin.Context) {
 	res, err := h.svc.ListOrders(c.Request.Context())
 	if err != nil {
@@ -32,7 +40,18 @@ func (h *KitchenAPI) ListPending(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"orders": pending})
 }
 
-// PUT /api/v1/kitchen/orders/:id/status
+// UpdateStatus godoc
+// @Summary Update kitchen order status
+// @Description Update order status from kitchen
+// @Tags kitchen
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Order ID"
+// @Param request body models.UpdateOrderStatusRequest true "Status update"
+// @Success 200 {object} models.Order
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /kitchen/orders/{id}/status [put]
 func (h *KitchenAPI) UpdateStatus(c *gin.Context) {
 	id := c.Param("id")
 	var body models.UpdateOrderStatusRequest

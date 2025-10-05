@@ -15,7 +15,17 @@ type FavoritesAPI struct{ svc *services.MenuSQLService }
 
 func NewFavoritesAPI(svc *services.MenuSQLService) *FavoritesAPI { return &FavoritesAPI{svc: svc} }
 
-// POST /api/v1/favorites
+// AddFavorite godoc
+// @Summary Add favorite menu item
+// @Description Add a menu item to user's favorites
+// @Tags favorites
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body object{menu_item_id=string} true "Favorite request"
+// @Success 201 {object} models.Favorite
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /favorites [post]
 func (h *FavoritesAPI) AddFavorite(c *gin.Context) {
 	var body struct {
 		MenuItemID string `json:"menu_item_id" binding:"required"`
@@ -33,7 +43,16 @@ func (h *FavoritesAPI) AddFavorite(c *gin.Context) {
 	c.JSON(http.StatusCreated, fav)
 }
 
-// DELETE /api/v1/favorites/:menu_item_id
+// RemoveFavorite godoc
+// @Summary Remove favorite menu item
+// @Description Remove a menu item from user's favorites
+// @Tags favorites
+// @Produce json
+// @Security BearerAuth
+// @Param menu_item_id path string true "Menu Item ID"
+// @Success 204 "Removed"
+// @Failure 500 {object} models.ErrorResponse
+// @Router /favorites/{menu_item_id} [delete]
 func (h *FavoritesAPI) RemoveFavorite(c *gin.Context) {
 	menuItemID := c.Param("menu_item_id")
 	accountID := c.GetString("account_id")

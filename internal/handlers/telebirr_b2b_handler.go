@@ -40,7 +40,18 @@ type CreatePaymentResponse struct {
 	Status     string `json:"status"`
 }
 
-// POST /api/v1/payments/telebirr/b2b/create
+// CreateB2BPayment godoc
+// @Summary Create Telebirr B2B payment
+// @Description Create a new Telebirr B2B payment for an order
+// @Tags telebirr-b2b
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body CreatePaymentRequest true "Payment request"
+// @Success 201 {object} CreatePaymentResponse
+// @@Failure 400 {object} models.ErrorRespons
+// @Failure 404 {object} models.ErrorResponse
+// @Router /payments/telebirr/b2b/create [post]
 func (h *TelebirrB2BHandler) CreateB2BPayment(c *gin.Context) {
 	var req CreatePaymentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -83,7 +94,15 @@ func (h *TelebirrB2BHandler) CreateB2BPayment(c *gin.Context) {
 	c.JSON(http.StatusCreated, response)
 }
 
-// GET /api/v1/payments/telebirr/b2b/status/:prepay_id
+// GetPaymentStatus godoc
+// @Summary Get Telebirr payment status
+// @Description Get the status of a Telebirr B2B payment
+// @Tags telebirr-b2b
+// @Produce json
+// @Param prepay_id path string true "Prepay ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 404 {object} models.ErrorResponse
+// @Router /payments/telebirr/b2b/status/{prepay_id} [get]
 func (h *TelebirrB2BHandler) GetPaymentStatus(c *gin.Context) {
 	prepayID := c.Param("prepay_id")
 	if prepayID == "" {
@@ -109,7 +128,15 @@ func (h *TelebirrB2BHandler) GetPaymentStatus(c *gin.Context) {
 	})
 }
 
-// POST /api/v1/payments/telebirr/b2b/notify
+// HandleB2BNotification godoc
+// @Summary Handle Telebirr payment notification
+// @Description Webhook endpoint for Telebirr payment notifications
+// @Tags telebirr-b2b
+// @Accept x-www-form-urlencoded
+// @Produce plain
+// @Success 200 {string} string "success"
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /payments/telebirr/b2b/notify [post]
 func (h *TelebirrB2BHandler) HandleB2BNotification(c *gin.Context) {
 	// Parse form data from Telebirr notification
 	if err := c.Request.ParseForm(); err != nil {
@@ -158,7 +185,16 @@ func (h *TelebirrB2BHandler) HandleB2BNotification(c *gin.Context) {
 	c.String(http.StatusOK, "success")
 }
 
-// GET /api/v1/payments/telebirr/b2b/return
+// HandleB2BReturn godoc
+// @Summary Handle Telebirr payment return
+// @Description Handle user return from Telebirr payment page
+// @Tags telebirr-b2b
+// @Produce json
+// @Param prepay_id query string true "Prepay ID"
+// @Param trade_status query string false "Trade status"
+// @Success 200 {object} map[string]interface{}
+// @Failure 404 {object} models.ErrorResponse
+// @Router /payments/telebirr/b2b/return [get]
 func (h *TelebirrB2BHandler) HandleB2BReturn(c *gin.Context) {
 	prepayID := c.Query("prepay_id")
 	tradeStatus := c.Query("trade_status")
@@ -205,7 +241,16 @@ func (h *TelebirrB2BHandler) HandleB2BReturn(c *gin.Context) {
 	}
 }
 
-// GET /api/v1/payments/telebirr/b2b/orders/:order_id
+// GetOrderPayments godoc
+// @Summary Get order payments
+// @Description Get all Telebirr payments for an order
+// @Tags telebirr-b2b
+// @Produce json
+// @Security BearerAuth
+// @Param order_id path string true "Order ID"
+// @Success 200 {object} map[string]interface{}
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /payments/telebirr/b2b/orders/{order_id} [get]
 func (h *TelebirrB2BHandler) GetOrderPayments(c *gin.Context) {
 	orderID := c.Param("order_id")
 	if orderID == "" {
@@ -225,7 +270,17 @@ func (h *TelebirrB2BHandler) GetOrderPayments(c *gin.Context) {
 	})
 }
 
-// POST /api/v1/payments/telebirr/b2b/refund
+// RefundB2BPayment godoc
+// @Summary Refund Telebirr payment
+// @Description Process a refund for a Telebirr B2B payment
+// @Tags telebirr-b2b
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body object{prepay_id=string,refund_amount=number,refund_reason=string} true "Refund request"
+// @Success 200 {object} map[string]interface{}
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /payments/telebirr/b2b/refund [post]
 func (h *TelebirrB2BHandler) RefundB2BPayment(c *gin.Context) {
 	var req struct {
 		PrepayID     string  `json:"prepay_id" binding:"required"`

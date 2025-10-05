@@ -16,7 +16,17 @@ type CategoriesAPI struct {
 
 func NewCategoriesAPI(svc *services.MenuSQLService) *CategoriesAPI { return &CategoriesAPI{svc: svc} }
 
-// POST /api/v1/categories
+// CreateCategory godoc
+// @Summary Create a category
+// @Description Create a new menu category
+// @Tags categories
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body models.Category true "Category request"
+// @Success 201 {object} models.Category
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /categories [post]
 func (h *CategoriesAPI) CreateCategory(c *gin.Context) {
 	var body models.Category
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -33,7 +43,15 @@ func (h *CategoriesAPI) CreateCategory(c *gin.Context) {
 	c.JSON(http.StatusCreated, body)
 }
 
-// GET /api/v1/categories
+// ListCategories godoc
+// @Summary List categories
+// @Description Get all menu categories
+// @Tags categories
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} models.ErrorResponse
+// @Router /categories [get]
 func (h *CategoriesAPI) ListCategories(c *gin.Context) {
 	cats, err := h.svc.ListCategories(c.Request.Context())
 	if err != nil {
@@ -43,7 +61,18 @@ func (h *CategoriesAPI) ListCategories(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"categories": cats})
 }
 
-// PUT /api/v1/categories/:id
+// UpdateCategory godoc
+// @Summary Update a category
+// @Description Update menu category details
+// @Tags categories
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Category ID"
+// @Param request body models.Category true "Category update"
+// @Success 200 {object} models.Category
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /categories/{id} [put]
 func (h *CategoriesAPI) UpdateCategory(c *gin.Context) {
 	id := c.Param("id")
 	var body models.Category
@@ -59,7 +88,16 @@ func (h *CategoriesAPI) UpdateCategory(c *gin.Context) {
 	c.JSON(http.StatusOK, body)
 }
 
-// DELETE /api/v1/categories/:id
+// DeleteCategory godoc
+// @Summary Delete a category
+// @Description Delete a menu category
+// @Tags categories
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Category ID"
+// @Success 204 "Deleted"
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /categories/{id} [delete]
 func (h *CategoriesAPI) DeleteCategory(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.svc.DeleteCategory(c.Request.Context(), id); err != nil {

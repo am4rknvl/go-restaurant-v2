@@ -16,7 +16,17 @@ type SessionsAPI struct {
 
 func NewSessionsAPI(svc *services.SessionService) *SessionsAPI { return &SessionsAPI{svc: svc} }
 
-// POST /api/v1/sessions
+// StartSession godoc
+// @Summary Start a table session
+// @Description Start a new dining session for a table
+// @Tags sessions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body models.Session true "Session request"
+// @Success 201 {object} models.Session
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /sessions [post]
 func (h *SessionsAPI) StartSession(c *gin.Context) {
 	var body models.Session
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -34,7 +44,16 @@ func (h *SessionsAPI) StartSession(c *gin.Context) {
 	c.JSON(http.StatusCreated, s)
 }
 
-// GET /api/v1/sessions/:id
+// GetSession godoc
+// @Summary Get session by ID
+// @Description Retrieve session details
+// @Tags sessions
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Session ID"
+// @Success 200 {object} models.Session
+// @Failure 404 {object} models.ErrorResponse
+// @Router /sessions/{id} [get]
 func (h *SessionsAPI) GetSession(c *gin.Context) {
 	id := c.Param("id")
 	s, err := h.svc.GetSession(c.Request.Context(), id)
@@ -45,7 +64,16 @@ func (h *SessionsAPI) GetSession(c *gin.Context) {
 	c.JSON(http.StatusOK, s)
 }
 
-// PUT /api/v1/sessions/:id/close
+// CloseSession godoc
+// @Summary Close a session
+// @Description Close an active dining session
+// @Tags sessions
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Session ID"
+// @Success 200 "Session closed"
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /sessions/{id}/close [put]
 func (h *SessionsAPI) CloseSession(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.svc.CloseSession(c.Request.Context(), id); err != nil {

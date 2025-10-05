@@ -16,7 +16,17 @@ type MenuAdminAPI struct {
 
 func NewMenuAdminAPI(svc *services.MenuSQLService) *MenuAdminAPI { return &MenuAdminAPI{svc: svc} }
 
-// POST /api/v1/menu/item
+// CreateItem godoc
+// @Summary Create menu item (admin)
+// @Description Create a new menu item (admin route)
+// @Tags menu-admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body models.MenuItem true "Menu item request"
+// @Success 201 {object} models.MenuItem
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /menu/item [post]
 func (h *MenuAdminAPI) CreateItem(c *gin.Context) {
 	var body models.MenuItem
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -33,7 +43,18 @@ func (h *MenuAdminAPI) CreateItem(c *gin.Context) {
 	c.JSON(http.StatusCreated, body)
 }
 
-// PUT /api/v1/menu/item/:id
+// UpdateItem godoc
+// @Summary Update menu item (admin)
+// @Description Update menu item details (admin route)
+// @Tags menu-admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Menu Item ID"
+// @Param request body models.MenuItem true "Menu item update"
+// @Success 200 {object} models.MenuItem
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /menu/item/{id} [put]
 func (h *MenuAdminAPI) UpdateItem(c *gin.Context) {
 	id := c.Param("id")
 	var body models.MenuItem
@@ -49,7 +70,16 @@ func (h *MenuAdminAPI) UpdateItem(c *gin.Context) {
 	c.JSON(http.StatusOK, body)
 }
 
-// DELETE /api/v1/menu/item/:id
+// DeleteItem godoc
+// @Summary Delete menu item (admin)
+// @Description Delete a menu item (admin route)
+// @Tags menu-admin
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Menu Item ID"
+// @Success 204 "Deleted"
+// @@Failure 400 {object} models.ErrorRespons
+// @Router /menu/item/{id} [delete]
 func (h *MenuAdminAPI) DeleteItem(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.svc.DeleteItem(c.Request.Context(), id); err != nil {
