@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	"restaurant-system/internal/models"
@@ -130,7 +129,7 @@ func (h *EnterpriseAPI) AdjustInventory(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	tx := h.db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -171,7 +170,7 @@ func (h *EnterpriseAPI) AssignWaiterToTable(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	tableID := c.Param("table_id")
 	assignment := models.StaffAssignment{
 		ID:           uuid.New().String(),
@@ -196,8 +195,8 @@ func (h *EnterpriseAPI) AssignChefToOrder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
-	orderID := c.Param("order_id")
+
+	orderID := c.Param("id")
 	assignment := models.StaffAssignment{
 		ID:           uuid.New().String(),
 		RestaurantID: req.RestaurantID,
@@ -244,7 +243,7 @@ func (h *EnterpriseAPI) AddTipToPayment(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	tip := models.PaymentTip{
 		ID:        uuid.New().String(),
 		PaymentID: c.Param("id"),
@@ -284,13 +283,13 @@ func (h *EnterpriseAPI) ApplyDiscount(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	var discount models.Discount
 	if err := h.db.Where("code = ? AND valid_from <= ? AND valid_to >= ?", req.Code, time.Now(), time.Now()).First(&discount).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "invalid_or_expired_discount"})
 		return
 	}
-	
+
 	// Apply discount logic here
 	c.JSON(http.StatusOK, gin.H{"discount_applied": true, "amount": discount.Value})
 }
@@ -322,7 +321,7 @@ func (h *EnterpriseAPI) EarnLoyaltyPoints(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	tx := h.db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -417,7 +416,7 @@ func (h *EnterpriseAPI) UpdateTableState(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	tableState := models.TableState{
 		ID:      uuid.New().String(),
 		TableID: c.Param("id"),
@@ -427,7 +426,7 @@ func (h *EnterpriseAPI) UpdateTableState(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	h.ws.Broadcast(gin.H{"type": "table.state_changed", "table_id": c.Param("id"), "state": req.State})
 	c.Status(http.StatusNoContent)
 }
@@ -441,17 +440,17 @@ func (h *EnterpriseAPI) JoinWaitlist(c *gin.Context) {
 	if entry.ID == "" {
 		entry.ID = uuid.New().String()
 	}
-	
+
 	// Get current position
 	var count int64
 	h.db.Model(&models.WaitlistEntry{}).Where("restaurant_id = ? AND status = 'waiting'", entry.RestaurantID).Count(&count)
 	entry.Position = int(count) + 1
-	
+
 	if err := h.db.Create(&entry).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	h.ws.Broadcast(gin.H{"type": "waitlist.joined", "restaurant_id": entry.RestaurantID, "position": entry.Position})
 	c.JSON(http.StatusCreated, entry)
 }

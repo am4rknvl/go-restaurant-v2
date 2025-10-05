@@ -49,7 +49,7 @@ func (h *TelebirrB2BHandler) CreateB2BPayment(c *gin.Context) {
 	}
 
 	// Validate order exists
-	order, err := h.orderService.GetOrder(req.OrderID)
+	_, err := h.orderService.GetOrder(req.OrderID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "order_not_found"})
 		return

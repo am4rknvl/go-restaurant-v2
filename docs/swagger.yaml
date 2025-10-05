@@ -1,0 +1,1036 @@
+openapi: 3.0.0
+info:
+  title: Restaurant Management System API
+  description: Complete API documentation for Restaurant OS with 120+ endpoints
+  version: 1.0.0
+  contact:
+    name: Restaurant OS Team
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        customer_id:
+          type: string
+        table_number:
+          type: integer
+        status:
+          type: string
+          enum: [pending, confirmed, preparing, ready, served, completed, cancelled]
+        total:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        created_at:
+          type: string
+          format: date-time
+
+    OrderItem:
+      type: object
+      properties:
+        product_id:
+          type: string
+        product_name:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: number
+        notes:
+          type: string
+
+    MenuItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        category_id:
+          type: string
+        emoji:
+          type: string
+        available:
+          type: boolean
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuVariant'
+        addons:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuAddon'
+
+    MenuVariant:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+
+    MenuAddon:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        emoji:
+          type: string
+
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: string
+        customer_name:
+          type: string
+        phone:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        party_size:
+          type: integer
+        status:
+          type: string
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        order_id:
+          type: string
+        amount:
+          type: number
+        method:
+          type: string
+        status:
+          type: string
+
+paths:
+  # ==================== AUTH ====================
+  /auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Create new account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+                password:
+                  type: string
+                restaurant_name:
+                  type: string
+      responses:
+        '201':
+          description: Account created successfully
+        '400':
+          description: Invalid request
+
+  /auth/signin:
+    post:
+      tags:
+        - Authentication
+      summary: Sign in with email/phone and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - identifier
+                - password
+              properties:
+                identifier:
+                  type: string
+                  description: Email or phone number
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
+
+  /auth/request-otp:
+    post:
+      tags:
+        - Authentication
+      summary: Request OTP for phone login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone_number:
+                  type: string
+                device_id:
+                  type: string
+      responses:
+        '200':
+          description: OTP sent successfully
+
+  /auth/verify-otp:
+    post:
+      tags:
+        - Authentication
+      summary: Verify OTP code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone_number:
+                  type: string
+                code:
+                  type: string
+                device_id:
+                  type: string
+      responses:
+        '200':
+          description: OTP verified, login successful
+
+  # ==================== ORDERS ====================
+  /orders:
+    post:
+      tags:
+        - Orders
+      summary: Create new order
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                table_id:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/OrderItem'
+                total:
+                  type: number
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+    get:
+      tags:
+        - Orders
+      summary: List all orders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+
+  /orders/{id}:
+    get:
+      tags:
+        - Orders
+      summary: Get order by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  /orders/{id}/status:
+    put:
+      tags:
+        - Orders
+      summary: Update order status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+      responses:
+        '200':
+          description: Status updated
+
+  /orders/{id}/reorder:
+    post:
+      tags:
+        - Orders
+      summary: Reorder a previous order
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: New order created
+
+  # ==================== MENU ====================
+  /menu/categories:
+    get:
+      tags:
+        - Menu
+      summary: List all categories
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+
+    post:
+      tags:
+        - Menu
+      summary: Create new category
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                emoji:
+                  type: string
+      responses:
+        '201':
+          description: Category created
+
+  /menu/categories/{id}:
+    get:
+      tags:
+        - Menu
+      summary: Get category by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Category details
+
+    put:
+      tags:
+        - Menu
+      summary: Update category
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Category updated
+
+    delete:
+      tags:
+        - Menu
+      summary: Delete category
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Category deleted
+
+  /menu/items:
+    get:
+      tags:
+        - Menu
+      summary: List menu items
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: available
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of menu items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MenuItem'
+
+    post:
+      tags:
+        - Menu
+      summary: Create menu item
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuItem'
+      responses:
+        '201':
+          description: Menu item created
+
+  /menu/items/{id}:
+    get:
+      tags:
+        - Menu
+      summary: Get menu item by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Menu item details
+
+    put:
+      tags:
+        - Menu
+      summary: Update menu item
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuItem'
+      responses:
+        '200':
+          description: Menu item updated
+
+    delete:
+      tags:
+        - Menu
+      summary: Delete menu item
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Menu item deleted
+
+  /menu/items/{id}/availability:
+    patch:
+      tags:
+        - Menu
+      summary: Toggle menu item availability
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                available:
+                  type: boolean
+      responses:
+        '200':
+          description: Availability updated
+
+  # ==================== KITCHEN ====================
+  /kitchen/orders:
+    get:
+      tags:
+        - Kitchen
+      summary: List pending kitchen orders
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of pending orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+
+  /kitchen/orders/{id}/status:
+    put:
+      tags:
+        - Kitchen
+      summary: Update kitchen order status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+      responses:
+        '200':
+          description: Status updated
+
+  # ==================== RESERVATIONS ====================
+  /reservations:
+    get:
+      tags:
+        - Reservations
+      summary: List reservations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of reservations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reservation'
+
+    post:
+      tags:
+        - Reservations
+      summary: Create reservation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reservation'
+      responses:
+        '201':
+          description: Reservation created
+
+  /reservations/{id}:
+    put:
+      tags:
+        - Reservations
+      summary: Update reservation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reservation'
+      responses:
+        '200':
+          description: Reservation updated
+
+    delete:
+      tags:
+        - Reservations
+      summary: Cancel reservation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Reservation cancelled
+
+  # ==================== PAYMENTS ====================
+  /payments:
+    post:
+      tags:
+        - Payments
+      summary: Create payment
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order_id:
+                  type: string
+                amount:
+                  type: number
+                method:
+                  type: string
+      responses:
+        '201':
+          description: Payment created
+
+  /payments/{id}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  /payments/telebirr/c2b/create:
+    post:
+      tags:
+        - Payments - Telebirr
+      summary: Create Telebirr C2B payment
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order_id:
+                  type: string
+                amount:
+                  type: number
+      responses:
+        '201':
+          description: Payment initiated
+
+  /payments/telebirr/c2b/status/{out_trade_no}:
+    get:
+      tags:
+        - Payments - Telebirr
+      summary: Get Telebirr C2B payment status
+      parameters:
+        - name: out_trade_no
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment status
+
+  # ==================== CUSTOMER ====================
+  /me:
+    get:
+      tags:
+        - Customer
+      summary: Get current user profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile
+
+    patch:
+      tags:
+        - Customer
+      summary: Update user profile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated
+
+  /loyalty:
+    get:
+      tags:
+        - Customer - Loyalty
+      summary: Get loyalty points
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Loyalty account details
+
+  /loyalty/redeem:
+    post:
+      tags:
+        - Customer - Loyalty
+      summary: Redeem loyalty points
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                points:
+                  type: integer
+      responses:
+        '200':
+          description: Points redeemed
+
+  # ==================== TABLES ====================
+  /tables:
+    get:
+      tags:
+        - Tables
+      summary: List all tables
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of tables
+
+    post:
+      tags:
+        - Tables
+      summary: Create new table
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                number:
+                  type: integer
+                capacity:
+                  type: integer
+      responses:
+        '201':
+          description: Table created
+
+  /tables/{id}/state:
+    patch:
+      tags:
+        - Tables
+      summary: Update table state
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                state:
+                  type: string
+                  enum: [available, occupied, reserved, cleaning]
+      responses:
+        '200':
+          description: Table state updated
+
+  # ==================== STAFF ====================
+  /staff/assignments:
+    get:
+      tags:
+        - Staff
+      summary: List staff assignments
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of staff assignments
+
+  /staff/branches/{branchId}/tables/{tableId}/assign:
+    post:
+      tags:
+        - Staff
+      summary: Assign waiter to table
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: branchId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tableId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                waiter_id:
+                  type: string
+      responses:
+        '200':
+          description: Waiter assigned
+
+  # ==================== REPORTS ====================
+  /reports/sales:
+    get:
+      tags:
+        - Reports
+      summary: Get sales report
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+        - name: end_date
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sales report data
+
+  /reports/popular-items:
+    get:
+      tags:
+        - Reports
+      summary: Get popular items report
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Popular items list
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Orders
+    description: Order management
+  - name: Menu
+    description: Menu items and categories
+  - name: Kitchen
+    description: Kitchen display and order preparation
+  - name: Reservations
+    description: Table reservations
+  - name: Payments
+    description: Payment processing
+  - name: Payments - Telebirr
+    description: Telebirr payment integration
+  - name: Customer
+    description: Customer profile and features
+  - name: Customer - Loyalty
+    description: Loyalty points and rewards
+  - name: Tables
+    description: Table management
+  - name: Staff
+    description: Staff operations
+  - name: Reports
+    description: Analytics and reporting
