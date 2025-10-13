@@ -26,7 +26,7 @@ func NewNotificationsAPI(svc *services.NotificationService) *NotificationsAPI {
 // @Security BearerAuth
 // @Param request body models.Subscription true "Subscription request"
 // @Success 201 {object} models.Subscription
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /notifications/subscribe [post]
 func (h *NotificationsAPI) Subscribe(c *gin.Context) {
 	var s models.Subscription
@@ -89,7 +89,7 @@ func (h *NotificationsAPI) ListForAccount(c *gin.Context) {
 // @Security BearerAuth
 // @Param request body object{subscription=models.Subscription,message=string} true "Notification payload"
 // @Success 200 "Notification sent"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /kitchen/notifications/send [post]
 func (h *NotificationsAPI) SendNotification(c *gin.Context) {
 	var payload struct {

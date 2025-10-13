@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"restaurant-system/internal/errors"
 	"restaurant-system/internal/models"
 	"restaurant-system/internal/services"
 	"restaurant-system/internal/websocket"
@@ -28,40 +29,52 @@ func NewOrderAPI(svc *services.OrderSQLService, hub *websocket.Hub) *OrderAPI {
 // @Produce json
 // @Param request body models.CreateOrderRequest true "Order request"
 // @Success 201 {object} models.Order
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /orders [post]
 func (h *OrderAPI) CreateOrder(c *gin.Context) {
 	var req models.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	items := make([]services.CreateOrderItemReq, 0, len(req.Items))
-	for _, it := range req.Items {
-		items = append(items, services.CreateOrderItemReq{MenuItemID: it.MenuItemID, Quantity: it.Quantity, SpecialInstructions: it.SpecialInstructions})
-	}
-	// pass optional session id when creating order
-	if req.SessionID != "" {
-		ord, err := h.svc.CreateOrder(c.Request.Context(), req.CustomerID, items, req.SessionID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		if h.hub != nil {
-			h.hub.Broadcast(struct {
-				Type  string        `json:"type"`
-				Order *models.Order `json:"order"`
-			}{Type: "order_created", Order: ord})
-		}
-		c.JSON(http.StatusCreated, ord)
+		errors.HandleBindError(c, err)
 		return
 	}
 
-	ord, err := h.svc.CreateOrder(c.Request.Context(), req.CustomerID, items)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Validate required fields
+	if req.CustomerID == "" {
+		errors.RespondError(c, errors.NewValidation("customer_id is required"))
 		return
 	}
+	if len(req.Items) == 0 {
+		errors.RespondError(c, errors.NewValidation("at least one item is required"))
+		return
+	}
+
+	items := make([]services.CreateOrderItemReq, 0, len(req.Items))
+	for _, it := range req.Items {
+		if it.MenuItemID == "" {
+			errors.RespondError(c, errors.NewValidation("menu_item_id is required for all items"))
+			return
+		}
+		if it.Quantity <= 0 {
+			errors.RespondError(c, errors.NewValidation("quantity must be greater than 0 for all items"))
+			return
+		}
+		items = append(items, services.CreateOrderItemReq{MenuItemID: it.MenuItemID, Quantity: it.Quantity, SpecialInstructions: it.SpecialInstructions})
+	}
+
+	// pass optional session id when creating order
+	var ord *models.Order
+	var err error
+	if req.SessionID != "" {
+		ord, err = h.svc.CreateOrder(c.Request.Context(), req.CustomerID, items, req.SessionID)
+	} else {
+		ord, err = h.svc.CreateOrder(c.Request.Context(), req.CustomerID, items)
+	}
+
+	if err != nil {
+		errors.HandleDatabaseError(c, err, "create order")
+		return
+	}
+
 	// broadcast to kitchen and customer
 	if h.hub != nil {
 		h.hub.Broadcast(struct {
@@ -69,7 +82,8 @@ func (h *OrderAPI) CreateOrder(c *gin.Context) {
 			Order *models.Order `json:"order"`
 		}{Type: "order_created", Order: ord})
 	}
-	c.JSON(http.StatusCreated, ord)
+
+	errors.RespondCreated(c, ord)
 }
 
 // POST /api/v1/orders/sync
@@ -200,7 +214,7 @@ func (h *OrderAPI) ListOrders(c *gin.Context) {
 // @Param id path string true "Order ID"
 // @Param request body models.UpdateOrderStatusRequest true "Status update request"
 // @Success 200 {object} models.Order
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /orders/{id}/status [put]
 func (h *OrderAPI) UpdateOrderStatus(c *gin.Context) {
 	id := c.Param("id")

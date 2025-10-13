@@ -24,7 +24,7 @@ func NewReviewsAPI(svc *services.MenuSQLService) *ReviewsAPI { return &ReviewsAP
 // @Security BearerAuth
 // @Param request body object{menu_item_id=string,rating=int,comment=string} true "Review request"
 // @Success 201 {object} models.Review
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /reviews [post]
 func (h *ReviewsAPI) CreateReview(c *gin.Context) {
 	var body struct {

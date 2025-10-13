@@ -25,7 +25,7 @@ func NewSessionsAPI(svc *services.SessionService) *SessionsAPI { return &Session
 // @Security BearerAuth
 // @Param request body models.Session true "Session request"
 // @Success 201 {object} models.Session
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /sessions [post]
 func (h *SessionsAPI) StartSession(c *gin.Context) {
 	var body models.Session
@@ -72,7 +72,7 @@ func (h *SessionsAPI) GetSession(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Session ID"
 // @Success 200 "Session closed"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /sessions/{id}/close [put]
 func (h *SessionsAPI) CloseSession(c *gin.Context) {
 	id := c.Param("id")
