@@ -26,7 +26,7 @@ func NewAccountHandler(accountService *services.AccountService) *AccountHandler 
 // @Produce json
 // @Param request body models.CreateAccountRequest true "Account request"
 // @Success 201 {object} map[string]interface{}
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /accounts [post]
 func (h *AccountHandler) CreateAccount(c *gin.Context) {
 	var req models.CreateAccountRequest

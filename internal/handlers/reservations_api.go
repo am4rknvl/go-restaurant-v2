@@ -25,7 +25,7 @@ func NewReservationsAPI(svc *services.ReservationService) *ReservationsAPI {
 // @Produce json
 // @Param request body models.Reservation true "Reservation request"
 // @Success 201 {object} models.Reservation
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /reservations [post]
 func (h *ReservationsAPI) CreateReservation(c *gin.Context) {
 	var r models.Reservation
@@ -66,7 +66,7 @@ func (h *ReservationsAPI) ListReservations(c *gin.Context) {
 // @Param id path string true "Reservation ID"
 // @Param request body models.Reservation true "Reservation update"
 // @Success 200 {object} models.Reservation
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /reservations/{id} [put]
 func (h *ReservationsAPI) UpdateReservation(c *gin.Context) {
 	id := c.Param("id")

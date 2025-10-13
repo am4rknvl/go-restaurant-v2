@@ -25,7 +25,7 @@ func NewCategoriesAPI(svc *services.MenuSQLService) *CategoriesAPI { return &Cat
 // @Security BearerAuth
 // @Param request body models.Category true "Category request"
 // @Success 201 {object} models.Category
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /categories [post]
 func (h *CategoriesAPI) CreateCategory(c *gin.Context) {
 	var body models.Category
@@ -49,7 +49,7 @@ func (h *CategoriesAPI) CreateCategory(c *gin.Context) {
 // @Tags categories
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} models.CategoriesListResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /categories [get]
 func (h *CategoriesAPI) ListCategories(c *gin.Context) {
@@ -71,7 +71,7 @@ func (h *CategoriesAPI) ListCategories(c *gin.Context) {
 // @Param id path string true "Category ID"
 // @Param request body models.Category true "Category update"
 // @Success 200 {object} models.Category
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /categories/{id} [put]
 func (h *CategoriesAPI) UpdateCategory(c *gin.Context) {
 	id := c.Param("id")
@@ -96,7 +96,7 @@ func (h *CategoriesAPI) UpdateCategory(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Category ID"
 // @Success 204 "Deleted"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /categories/{id} [delete]
 func (h *CategoriesAPI) DeleteCategory(c *gin.Context) {
 	id := c.Param("id")

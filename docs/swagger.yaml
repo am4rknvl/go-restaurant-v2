@@ -46,6 +46,13 @@ definitions:
       currency:
         type: string
     type: object
+  models.CategoriesListResponse:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/models.Category'
+        type: array
+    type: object
   models.Category:
     properties:
       created_at:
@@ -493,6 +500,10 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Create a new account
       tags:
       - accounts
@@ -547,6 +558,10 @@ paths:
       responses:
         "204":
           description: Updated
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update account
@@ -623,6 +638,10 @@ paths:
       responses:
         "204":
           description: Points earned
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Earn loyalty points
@@ -655,6 +674,10 @@ paths:
       responses:
         "204":
           description: Role assigned
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Assign role to account
@@ -679,6 +702,10 @@ paths:
       responses:
         "204":
           description: Role removed
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Remove role from account
@@ -928,8 +955,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/models.CategoriesListResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -957,6 +983,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.Category'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create a category
@@ -976,6 +1006,10 @@ paths:
       responses:
         "204":
           description: Deleted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete a category
@@ -1004,6 +1038,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.Category'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update a category
@@ -1028,6 +1066,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.Discount'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create discount
@@ -1089,6 +1131,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.Favorite'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Add favorite menu item
@@ -1160,6 +1206,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.InventoryItem'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create inventory item
@@ -1189,6 +1239,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.InventoryItem'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update inventory item
@@ -1221,6 +1275,10 @@ paths:
       responses:
         "204":
           description: Adjusted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Adjust inventory quantity
@@ -1248,6 +1306,10 @@ paths:
       responses:
         "200":
           description: Notification sent
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Send notification
@@ -1297,6 +1359,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.Order'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update kitchen order status
@@ -1387,6 +1453,10 @@ paths:
       responses:
         "204":
           description: Deleted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete menu addon
@@ -1415,6 +1485,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.MenuAddon'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update menu addon
@@ -1461,6 +1535,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.MenuCategory'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create menu category
@@ -1480,6 +1558,10 @@ paths:
       responses:
         "204":
           description: Deleted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete menu category
@@ -1530,6 +1612,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.MenuCategory'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update menu category
@@ -1554,6 +1640,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.MenuItem'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create menu item (admin)
@@ -1573,6 +1663,10 @@ paths:
       responses:
         "204":
           description: Deleted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete menu item (admin)
@@ -1601,6 +1695,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.MenuItem'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update menu item (admin)
@@ -1651,6 +1749,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.MenuItemGorm'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create menu item
@@ -1670,6 +1772,10 @@ paths:
       responses:
         "204":
           description: Deleted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete menu item
@@ -1720,6 +1826,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.MenuItemGorm'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update menu item
@@ -1749,6 +1859,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.MenuAddon'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create menu item addon
@@ -1779,6 +1893,10 @@ paths:
       responses:
         "204":
           description: Updated
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update item availability
@@ -1808,6 +1926,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.MenuVariant'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create menu item variant
@@ -1827,6 +1949,10 @@ paths:
       responses:
         "204":
           description: Deleted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Delete menu variant
@@ -1855,6 +1981,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.MenuVariant'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update menu variant
@@ -1928,6 +2058,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.Subscription'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Subscribe to notifications
@@ -1969,6 +2103,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.Order'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Create a new order
       tags:
       - orders
@@ -2022,6 +2160,10 @@ paths:
       responses:
         "204":
           description: Assigned
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Assign chef to order
@@ -2101,6 +2243,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.Order'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Update order status
       tags:
       - orders
@@ -2130,6 +2276,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.Payment'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Create a payment
       tags:
       - payments
@@ -2219,6 +2369,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.PaymentTip'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Add tip to payment
@@ -2272,6 +2426,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/handlers.CreatePaymentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
         "404":
           description: Not Found
           schema:
@@ -2293,6 +2451,10 @@ paths:
           description: success
           schema:
             type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Handle Telebirr payment notification
       tags:
       - telebirr-b2b
@@ -2313,6 +2475,10 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get order payments
@@ -2345,6 +2511,10 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Refund Telebirr payment
@@ -2510,6 +2680,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.Reservation'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Create a reservation
       tags:
       - reservations
@@ -2557,6 +2731,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.Reservation'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Update a reservation
       tags:
       - reservations
@@ -2629,6 +2807,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.Restaurant'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create restaurant
@@ -2658,6 +2840,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.Restaurant'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update restaurant
@@ -2689,6 +2875,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.Review'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create a review
@@ -2713,6 +2903,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.Session'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Start a table session
@@ -2757,6 +2951,10 @@ paths:
       responses:
         "200":
           description: Session closed
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Close a session
@@ -3000,6 +3198,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.Table'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Create a new table
@@ -3055,6 +3257,10 @@ paths:
       responses:
         "204":
           description: Updated
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update table state
@@ -3087,6 +3293,10 @@ paths:
       responses:
         "204":
           description: Assigned
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Assign waiter to table
@@ -3133,6 +3343,10 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.WaitlistEntry'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Join waitlist
       tags:
       - enterprise

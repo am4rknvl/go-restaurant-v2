@@ -50,7 +50,7 @@ func (h *KitchenAPI) ListPending(c *gin.Context) {
 // @Param id path string true "Order ID"
 // @Param request body models.UpdateOrderStatusRequest true "Status update"
 // @Success 200 {object} models.Order
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /kitchen/orders/{id}/status [put]
 func (h *KitchenAPI) UpdateStatus(c *gin.Context) {
 	id := c.Param("id")

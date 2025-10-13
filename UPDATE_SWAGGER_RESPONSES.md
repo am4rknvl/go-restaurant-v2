@@ -6,7 +6,7 @@ Use your IDE's "Find and Replace in Files" feature to replace all error response
 ## Replacements needed:
 
 ### 1. Replace all error responses:
-**Find:** `@@Failure 400 {object} models.ErrorRespons`
+**Find:** `@Failure 400 {object} models.ErrorResponse`
 **Replace with:** `@Failure 400 {object} models.ErrorResponse`
 
 **Find:** `@Failure 401 {object} models.ErrorResponse`

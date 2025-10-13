@@ -24,7 +24,7 @@ func NewFavoritesAPI(svc *services.MenuSQLService) *FavoritesAPI { return &Favor
 // @Security BearerAuth
 // @Param request body object{menu_item_id=string} true "Favorite request"
 // @Success 201 {object} models.Favorite
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /favorites [post]
 func (h *FavoritesAPI) AddFavorite(c *gin.Context) {
 	var body struct {

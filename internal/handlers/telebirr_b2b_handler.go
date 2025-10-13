@@ -49,7 +49,7 @@ type CreatePaymentResponse struct {
 // @Security BearerAuth
 // @Param request body CreatePaymentRequest true "Payment request"
 // @Success 201 {object} CreatePaymentResponse
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Failure 404 {object} models.ErrorResponse
 // @Router /payments/telebirr/b2b/create [post]
 func (h *TelebirrB2BHandler) CreateB2BPayment(c *gin.Context) {
@@ -135,7 +135,7 @@ func (h *TelebirrB2BHandler) GetPaymentStatus(c *gin.Context) {
 // @Accept x-www-form-urlencoded
 // @Produce plain
 // @Success 200 {string} string "success"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /payments/telebirr/b2b/notify [post]
 func (h *TelebirrB2BHandler) HandleB2BNotification(c *gin.Context) {
 	// Parse form data from Telebirr notification
@@ -249,7 +249,7 @@ func (h *TelebirrB2BHandler) HandleB2BReturn(c *gin.Context) {
 // @Security BearerAuth
 // @Param order_id path string true "Order ID"
 // @Success 200 {object} map[string]interface{}
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /payments/telebirr/b2b/orders/{order_id} [get]
 func (h *TelebirrB2BHandler) GetOrderPayments(c *gin.Context) {
 	orderID := c.Param("order_id")
@@ -279,7 +279,7 @@ func (h *TelebirrB2BHandler) GetOrderPayments(c *gin.Context) {
 // @Security BearerAuth
 // @Param request body object{prepay_id=string,refund_amount=number,refund_reason=string} true "Refund request"
 // @Success 200 {object} map[string]interface{}
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /payments/telebirr/b2b/refund [post]
 func (h *TelebirrB2BHandler) RefundB2BPayment(c *gin.Context) {
 	var req struct {

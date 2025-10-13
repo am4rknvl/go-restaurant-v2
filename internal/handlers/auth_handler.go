@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"restaurant-system/internal/errors"
 	"restaurant-system/internal/models"
 	"restaurant-system/internal/services"
 	"strings"
@@ -30,14 +31,22 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 func (h *AuthHandler) RequestOTP(c *gin.Context) {
 	var req models.RequestOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HandleBindError(c, err)
 		return
 	}
+
+	// Validate phone number
+	if req.PhoneNumber == "" {
+		errors.RespondError(c, errors.NewValidation("phone_number is required"))
+		return
+	}
+
 	if err := h.authService.RequestOTP(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HandleInternalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "OTP sent"})
+
+	errors.RespondOK(c, gin.H{"message": "OTP sent successfully"})
 }
 
 // VerifyOTP godoc
@@ -53,14 +62,26 @@ func (h *AuthHandler) RequestOTP(c *gin.Context) {
 func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	var req models.VerifyOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HandleBindError(c, err)
 		return
 	}
+
+	// Validate required fields
+	if req.PhoneNumber == "" {
+		errors.RespondError(c, errors.NewValidation("phone_number is required"))
+		return
+	}
+	if req.Code == "" {
+		errors.RespondError(c, errors.NewValidation("code is required"))
+		return
+	}
+
 	tokenCompound, err := h.authService.VerifyOTP(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.RespondError(c, errors.NewUnauthorized("Invalid OTP code").WithDetails(err.Error()))
 		return
 	}
+
 	// tokenCompound is access::refresh
 	parts := strings.SplitN(tokenCompound, "::", 2)
 	access := parts[0]
@@ -68,7 +89,8 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	if len(parts) > 1 {
 		refresh = parts[1]
 	}
-	c.JSON(http.StatusOK, gin.H{"access_token": access, "refresh_token": refresh})
+
+	errors.RespondOK(c, gin.H{"access_token": access, "refresh_token": refresh})
 }
 
 // Refresh godoc

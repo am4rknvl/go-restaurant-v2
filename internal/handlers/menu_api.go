@@ -1,8 +1,7 @@
 package handlers
 
 import (
-	"net/http"
-
+	"restaurant-system/internal/errors"
 	"restaurant-system/internal/services"
 
 	"github.com/gin-gonic/gin"
@@ -29,10 +28,22 @@ func (h *MenuAPI) GetQRMenu(c *gin.Context) {
 	restaurantID := c.Param("restaurant_id")
 	tableID := c.Param("table_id")
 	lang := c.Query("lang")
-	cats, err := h.svc.GetQRMenu(c.Request.Context(), restaurantID, tableID, lang)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	// Validate required parameters
+	if restaurantID == "" {
+		errors.RespondError(c, errors.NewValidation("restaurant_id is required"))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"categories": cats})
+	if tableID == "" {
+		errors.RespondError(c, errors.NewValidation("table_id is required"))
+		return
+	}
+
+	cats, err := h.svc.GetQRMenu(c.Request.Context(), restaurantID, tableID, lang)
+	if err != nil {
+		errors.HandleDatabaseError(c, err, "retrieve menu")
+		return
+	}
+
+	errors.RespondOK(c, gin.H{"categories": cats})
 }

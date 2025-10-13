@@ -1,8 +1,7 @@
 package handlers
 
 import (
-	"net/http"
-
+	"restaurant-system/internal/errors"
 	"restaurant-system/internal/models"
 	"restaurant-system/internal/services"
 
@@ -25,22 +24,39 @@ func NewMenuAdminAPI(svc *services.MenuSQLService) *MenuAdminAPI { return &MenuA
 // @Security BearerAuth
 // @Param request body models.MenuItem true "Menu item request"
 // @Success 201 {object} models.MenuItem
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/item [post]
 func (h *MenuAdminAPI) CreateItem(c *gin.Context) {
 	var body models.MenuItem
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HandleBindError(c, err)
 		return
 	}
+
+	// Validate required fields
+	if body.Name == "" {
+		errors.RespondError(c, errors.NewValidation("name is required"))
+		return
+	}
+	if body.Category == "" {
+		errors.RespondError(c, errors.NewValidation("category is required"))
+		return
+	}
+	if body.Price <= 0 {
+		errors.RespondError(c, errors.NewValidation("price must be greater than 0"))
+		return
+	}
+
 	if body.ID == "" {
 		body.ID = uuid.New().String()
 	}
+
 	if err := h.svc.CreateItem(c.Request.Context(), &body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HandleDatabaseError(c, err, "create menu item")
 		return
 	}
-	c.JSON(http.StatusCreated, body)
+
+	errors.RespondCreated(c, body)
 }
 
 // UpdateItem godoc
@@ -53,21 +69,28 @@ func (h *MenuAdminAPI) CreateItem(c *gin.Context) {
 // @Param id path string true "Menu Item ID"
 // @Param request body models.MenuItem true "Menu item update"
 // @Success 200 {object} models.MenuItem
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/item/{id} [put]
 func (h *MenuAdminAPI) UpdateItem(c *gin.Context) {
 	id := c.Param("id")
+	if id == "" {
+		errors.RespondError(c, errors.NewValidation("id is required"))
+		return
+	}
+
 	var body models.MenuItem
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HandleBindError(c, err)
 		return
 	}
+
 	body.ID = id
 	if err := h.svc.UpdateItem(c.Request.Context(), &body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HandleDatabaseError(c, err, "update menu item")
 		return
 	}
-	c.JSON(http.StatusOK, body)
+
+	errors.RespondOK(c, body)
 }
 
 // DeleteItem godoc
@@ -78,13 +101,19 @@ func (h *MenuAdminAPI) UpdateItem(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Menu Item ID"
 // @Success 204 "Deleted"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/item/{id} [delete]
 func (h *MenuAdminAPI) DeleteItem(c *gin.Context) {
 	id := c.Param("id")
-	if err := h.svc.DeleteItem(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if id == "" {
+		errors.RespondError(c, errors.NewValidation("id is required"))
 		return
 	}
-	c.Status(http.StatusNoContent)
+
+	if err := h.svc.DeleteItem(c.Request.Context(), id); err != nil {
+		errors.HandleDatabaseError(c, err, "delete menu item")
+		return
+	}
+
+	errors.RespondNoContent(c)
 }

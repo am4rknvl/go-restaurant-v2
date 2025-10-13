@@ -8,6 +8,7 @@ import (
 	"restaurant-system/internal/config"
 	"restaurant-system/internal/database"
 	"restaurant-system/internal/handlers"
+	"restaurant-system/internal/middleware"
 	"restaurant-system/internal/models"
 	"restaurant-system/internal/services"
 	"restaurant-system/internal/websocket"
@@ -162,6 +163,10 @@ func main() {
 	// Setup router
 	router := gin.Default()
 
+	// Add error handling middleware
+	router.Use(middleware.ErrorHandler())
+	router.Use(middleware.RequestLogger())
+
 	// Share services in context
 	router.Use(func(c *gin.Context) {
 		var ps services.PaymentService = paymentService
@@ -240,35 +245,34 @@ func main() {
 			menuGroup.PUT("/addons/:id", handlers.RequireAdminOrManager(), mm.UpdateAddon)
 			menuGroup.DELETE("/addons/:id", handlers.RequireAdminOrManager(), mm.DeleteAddon)
 		}
-		// Protect admin routes
-		admin := api.Group("")
-		admin.Use(auth.RequireAuth(""))
-		menuAdminGroup := admin.Group("/menu")
+		// Protect admin routes - require admin role for write operations
+		menuAdminGroup := api.Group("/menu")
 		{
-			menuAdminGroup.POST("/item", menuAdmin.CreateItem)
-			menuAdminGroup.PUT("/item/:id", menuAdmin.UpdateItem)
-			menuAdminGroup.DELETE("/item/:id", menuAdmin.DeleteItem)
+			menuAdminGroup.POST("/item", auth.RequireAnyRole("admin"), menuAdmin.CreateItem)
+			menuAdminGroup.PUT("/item/:id", auth.RequireAnyRole("admin"), menuAdmin.UpdateItem)
+			menuAdminGroup.DELETE("/item/:id", auth.RequireAnyRole("admin"), menuAdmin.DeleteItem)
 		}
-		cats := admin.Group("/categories")
+		// Categories - admin only for write operations, customers can read
+		cats := api.Group("/categories")
 		{
-			cats.POST("", categoriesAPI.CreateCategory)
-			cats.GET("", categoriesAPI.ListCategories)
-			cats.PUT("/:id", categoriesAPI.UpdateCategory)
-			cats.DELETE("/:id", categoriesAPI.DeleteCategory)
+			cats.POST("", auth.RequireAnyRole("admin"), categoriesAPI.CreateCategory)
+			cats.GET("", categoriesAPI.ListCategories) // Public read access
+			cats.PUT("/:id", auth.RequireAnyRole("admin"), categoriesAPI.UpdateCategory)
+			cats.DELETE("/:id", auth.RequireAnyRole("admin"), categoriesAPI.DeleteCategory)
 		}
 
-		// Tables & sessions
-		tables := admin.Group("/tables")
+		// Tables & sessions - require admin/manager role
+		tables := api.Group("/tables")
 		{
-			tables.POST("", tablesAPI.CreateTable)
-			tables.GET("", tablesAPI.ListTables)
-			tables.GET("/:id", tablesAPI.GetTable)
+			tables.POST("", auth.RequireAnyRole("admin", "manager"), tablesAPI.CreateTable)
+			tables.GET("", auth.RequireAnyRole("admin", "manager", "waiter", "host"), tablesAPI.ListTables)
+			tables.GET("/:id", auth.RequireAnyRole("admin", "manager", "waiter", "host"), tablesAPI.GetTable)
 		}
-		sessions := admin.Group("/sessions")
+		sessions := api.Group("/sessions")
 		{
-			sessions.POST("", sessionsAPI.StartSession)
-			sessions.GET("/:id", sessionsAPI.GetSession)
-			sessions.PUT("/:id/close", sessionsAPI.CloseSession)
+			sessions.POST("", auth.RequireAnyRole("admin", "manager", "waiter"), sessionsAPI.StartSession)
+			sessions.GET("/:id", auth.RequireAnyRole("admin", "manager", "waiter"), sessionsAPI.GetSession)
+			sessions.PUT("/:id/close", auth.RequireAnyRole("admin", "manager", "waiter"), sessionsAPI.CloseSession)
 		}
 
 		// Reservations

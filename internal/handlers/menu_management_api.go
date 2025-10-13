@@ -29,7 +29,7 @@ func NewMenuManagementAPI(gdb *gorm.DB, ws interface{ Broadcast(v interface{}) }
 // @Security BearerAuth
 // @Param request body models.MenuCategory true "Category request"
 // @Success 201 {object} models.MenuCategory
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/categories [post]
 func (h *MenuManagementAPI) CreateCategory(c *gin.Context) {
 	var body models.MenuCategory
@@ -97,7 +97,7 @@ func (h *MenuManagementAPI) ListCategories(c *gin.Context) {
 // @Param id path string true "Category ID"
 // @Param request body models.MenuCategory true "Category update"
 // @Success 200 {object} models.MenuCategory
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/categories/{id} [put]
 func (h *MenuManagementAPI) UpdateCategory(c *gin.Context) {
 	var body models.MenuCategory
@@ -121,7 +121,7 @@ func (h *MenuManagementAPI) UpdateCategory(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Category ID"
 // @Success 204 "Deleted"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/categories/{id} [delete]
 func (h *MenuManagementAPI) DeleteCategory(c *gin.Context) {
 	if err := h.gorm.Delete(&models.MenuCategory{}, "id = ?", c.Param("id")).Error; err != nil {
@@ -140,7 +140,7 @@ func (h *MenuManagementAPI) DeleteCategory(c *gin.Context) {
 // @Security BearerAuth
 // @Param request body models.MenuItemGorm true "Menu item request"
 // @Success 201 {object} models.MenuItemGorm
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/items [post]
 func (h *MenuManagementAPI) CreateItem(c *gin.Context) {
 	var body models.MenuItemGorm
@@ -212,7 +212,7 @@ func (h *MenuManagementAPI) ListItems(c *gin.Context) {
 // @Param id path string true "Item ID"
 // @Param request body models.MenuItemGorm true "Item update"
 // @Success 200 {object} models.MenuItemGorm
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/items/{id} [put]
 func (h *MenuManagementAPI) UpdateItem(c *gin.Context) {
 	var body models.MenuItemGorm
@@ -238,7 +238,7 @@ func (h *MenuManagementAPI) UpdateItem(c *gin.Context) {
 // @Param id path string true "Item ID"
 // @Param request body object{available=bool} true "Availability update"
 // @Success 204 "Updated"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/items/{id}/availability [patch]
 func (h *MenuManagementAPI) UpdateAvailability(c *gin.Context) {
 	type req struct {
@@ -267,7 +267,7 @@ func (h *MenuManagementAPI) UpdateAvailability(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Item ID"
 // @Success 204 "Deleted"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/items/{id} [delete]
 func (h *MenuManagementAPI) DeleteItem(c *gin.Context) {
 	if err := h.gorm.Delete(&models.MenuItemGorm{}, "id = ?", c.Param("id")).Error; err != nil {
@@ -287,7 +287,7 @@ func (h *MenuManagementAPI) DeleteItem(c *gin.Context) {
 // @Param id path string true "Item ID"
 // @Param request body models.MenuVariant true "Variant request"
 // @Success 201 {object} models.MenuVariant
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/items/{id}/variants [post]
 func (h *MenuManagementAPI) CreateVariant(c *gin.Context) {
 	var body models.MenuVariant
@@ -316,7 +316,7 @@ func (h *MenuManagementAPI) CreateVariant(c *gin.Context) {
 // @Param id path string true "Variant ID"
 // @Param request body models.MenuVariant true "Variant update"
 // @Success 200 {object} models.MenuVariant
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/variants/{id} [put]
 func (h *MenuManagementAPI) UpdateVariant(c *gin.Context) {
 	var body models.MenuVariant
@@ -340,7 +340,7 @@ func (h *MenuManagementAPI) UpdateVariant(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Variant ID"
 // @Success 204 "Deleted"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/variants/{id} [delete]
 func (h *MenuManagementAPI) DeleteVariant(c *gin.Context) {
 	if err := h.gorm.Delete(&models.MenuVariant{}, "id = ?", c.Param("id")).Error; err != nil {
@@ -360,7 +360,7 @@ func (h *MenuManagementAPI) DeleteVariant(c *gin.Context) {
 // @Param id path string true "Item ID"
 // @Param request body models.MenuAddon true "Addon request"
 // @Success 201 {object} models.MenuAddon
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/items/{id}/addons [post]
 func (h *MenuManagementAPI) CreateAddon(c *gin.Context) {
 	var body models.MenuAddon
@@ -389,7 +389,7 @@ func (h *MenuManagementAPI) CreateAddon(c *gin.Context) {
 // @Param id path string true "Addon ID"
 // @Param request body models.MenuAddon true "Addon update"
 // @Success 200 {object} models.MenuAddon
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/addons/{id} [put]
 func (h *MenuManagementAPI) UpdateAddon(c *gin.Context) {
 	var body models.MenuAddon
@@ -413,7 +413,7 @@ func (h *MenuManagementAPI) UpdateAddon(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Addon ID"
 // @Success 204 "Deleted"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /menu/addons/{id} [delete]
 func (h *MenuManagementAPI) DeleteAddon(c *gin.Context) {
 	if err := h.gorm.Delete(&models.MenuAddon{}, "id = ?", c.Param("id")).Error; err != nil {

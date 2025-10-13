@@ -49,7 +49,7 @@ func (h *EnterpriseAPI) GetAccount(c *gin.Context) {
 // @Param id path string true "Account ID"
 // @Param request body object{name=string,phone=string} true "Account update"
 // @Success 204 "Updated"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /accounts/{id} [put]
 func (h *EnterpriseAPI) UpdateAccount(c *gin.Context) {
 	var req struct {
@@ -77,7 +77,7 @@ func (h *EnterpriseAPI) UpdateAccount(c *gin.Context) {
 // @Param id path string true "Account ID"
 // @Param request body object{role=string,restaurant_id=string} true "Role assignment"
 // @Success 204 "Role assigned"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /accounts/{id}/roles [post]
 func (h *EnterpriseAPI) AssignRole(c *gin.Context) {
 	var req struct {
@@ -110,7 +110,7 @@ func (h *EnterpriseAPI) AssignRole(c *gin.Context) {
 // @Param id path string true "Account ID"
 // @Param role path string true "Role name"
 // @Success 204 "Role removed"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /accounts/{id}/roles/{role} [delete]
 func (h *EnterpriseAPI) RemoveRole(c *gin.Context) {
 	if err := h.db.Delete(&models.UserRole{}, "account_id = ? AND role = ?", c.Param("id"), c.Param("role")).Error; err != nil {
@@ -152,7 +152,7 @@ func (h *EnterpriseAPI) ListInventory(c *gin.Context) {
 // @Security BearerAuth
 // @Param request body models.InventoryItem true "Inventory item"
 // @Success 201 {object} models.InventoryItem
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /inventory [post]
 func (h *EnterpriseAPI) CreateInventoryItem(c *gin.Context) {
 	var item models.InventoryItem
@@ -180,7 +180,7 @@ func (h *EnterpriseAPI) CreateInventoryItem(c *gin.Context) {
 // @Param id path string true "Item ID"
 // @Param request body models.InventoryItem true "Item update"
 // @Success 200 {object} models.InventoryItem
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /inventory/{id} [put]
 func (h *EnterpriseAPI) UpdateInventoryItem(c *gin.Context) {
 	var item models.InventoryItem
@@ -206,7 +206,7 @@ func (h *EnterpriseAPI) UpdateInventoryItem(c *gin.Context) {
 // @Param id path string true "Item ID"
 // @Param request body object{delta=number,reason=string} true "Adjustment"
 // @Success 204 "Adjusted"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /inventory/{id}/adjust [patch]
 func (h *EnterpriseAPI) AdjustInventory(c *gin.Context) {
 	var req struct {
@@ -258,7 +258,7 @@ func (h *EnterpriseAPI) AdjustInventory(c *gin.Context) {
 // @Param table_id path string true "Table ID"
 // @Param request body object{waiter_id=string,restaurant_id=string} true "Assignment"
 // @Success 204 "Assigned"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /tables/{table_id}/assign-waiter [post]
 func (h *EnterpriseAPI) AssignWaiterToTable(c *gin.Context) {
 	var req struct {
@@ -295,7 +295,7 @@ func (h *EnterpriseAPI) AssignWaiterToTable(c *gin.Context) {
 // @Param id path string true "Order ID"
 // @Param request body object{chef_id=string,restaurant_id=string} true "Assignment"
 // @Success 204 "Assigned"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /orders/{id}/assign-chef [post]
 func (h *EnterpriseAPI) AssignChefToOrder(c *gin.Context) {
 	var req struct {
@@ -385,7 +385,7 @@ func (h *EnterpriseAPI) MergeOrders(c *gin.Context) {
 // @Param id path string true "Payment ID"
 // @Param request body object{amount=number} true "Tip amount"
 // @Success 200 {object} models.PaymentTip
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /payments/{id}/tip [post]
 func (h *EnterpriseAPI) AddTipToPayment(c *gin.Context) {
 	var req struct {
@@ -417,7 +417,7 @@ func (h *EnterpriseAPI) AddTipToPayment(c *gin.Context) {
 // @Security BearerAuth
 // @Param request body models.Discount true "Discount"
 // @Success 201 {object} models.Discount
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /discounts [post]
 func (h *EnterpriseAPI) CreateDiscount(c *gin.Context) {
 	var discount models.Discount
@@ -504,7 +504,7 @@ func (h *EnterpriseAPI) GetLoyaltyAccount(c *gin.Context) {
 // @Param id path string true "Account ID"
 // @Param request body object{points=int} true "Points to earn"
 // @Success 204 "Points earned"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /accounts/{id}/loyalty/earn [post]
 func (h *EnterpriseAPI) EarnLoyaltyPoints(c *gin.Context) {
 	var req struct {
@@ -610,7 +610,7 @@ func (h *EnterpriseAPI) ListRestaurants(c *gin.Context) {
 // @Security BearerAuth
 // @Param request body models.Restaurant true "Restaurant"
 // @Success 201 {object} models.Restaurant
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /restaurants [post]
 func (h *EnterpriseAPI) CreateRestaurant(c *gin.Context) {
 	var restaurant models.Restaurant
@@ -638,7 +638,7 @@ func (h *EnterpriseAPI) CreateRestaurant(c *gin.Context) {
 // @Param id path string true "Restaurant ID"
 // @Param request body models.Restaurant true "Restaurant update"
 // @Success 200 {object} models.Restaurant
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /restaurants/{id} [put]
 func (h *EnterpriseAPI) UpdateRestaurant(c *gin.Context) {
 	var restaurant models.Restaurant
@@ -664,7 +664,7 @@ func (h *EnterpriseAPI) UpdateRestaurant(c *gin.Context) {
 // @Param id path string true "Table ID"
 // @Param request body object{state=string} true "State update"
 // @Success 204 "Updated"
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /tables/{id}/state [patch]
 func (h *EnterpriseAPI) UpdateTableState(c *gin.Context) {
 	var req struct {
@@ -697,7 +697,7 @@ func (h *EnterpriseAPI) UpdateTableState(c *gin.Context) {
 // @Produce json
 // @Param request body models.WaitlistEntry true "Waitlist entry"
 // @Success 201 {object} models.WaitlistEntry
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /waitlist [post]
 func (h *EnterpriseAPI) JoinWaitlist(c *gin.Context) {
 	var entry models.WaitlistEntry

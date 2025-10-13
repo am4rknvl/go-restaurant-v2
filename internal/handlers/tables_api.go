@@ -25,7 +25,7 @@ func NewTablesAPI(svc *services.TableService) *TablesAPI { return &TablesAPI{svc
 // @Security BearerAuth
 // @Param request body models.Table true "Table request"
 // @Success 201 {object} models.Table
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /tables [post]
 func (h *TablesAPI) CreateTable(c *gin.Context) {
 	var body models.Table

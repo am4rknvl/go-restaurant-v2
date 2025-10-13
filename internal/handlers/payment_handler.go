@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"restaurant-system/internal/errors"
 	"restaurant-system/internal/services"
 )
 
@@ -22,7 +23,7 @@ func NewPaymentHandler(svc services.PaymentService) *PaymentHandler { return &Pa
 // @Produce json
 // @Param request body object{order_id=int,amount_cents=int,provider=string} true "Payment request"
 // @Success 201 {object} models.Payment
-// @@Failure 400 {object} models.ErrorRespons
+// @Failure 400 {object} models.ErrorResponse
 // @Router /payments [post]
 func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 	restaurantID := getRestaurantIDFromContext(c)
@@ -32,15 +33,32 @@ func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 		Provider    string `json:"provider"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HandleBindError(c, err)
 		return
 	}
+
+	// Validate payment amount
+	if body.AmountCents <= 0 {
+		errors.RespondError(c, errors.NewValidation("amount_cents must be greater than 0"))
+		return
+	}
+
+	// Validate provider if specified
+	if body.Provider != "" {
+		validProviders := map[string]bool{"telebirr": true, "chapa": true, "mpesa": true, "cash": true}
+		if !validProviders[body.Provider] {
+			errors.RespondError(c, errors.NewValidation("invalid payment provider"))
+			return
+		}
+	}
+
 	p, err := h.svc.CreatePayment(c.Request.Context(), restaurantID, body.OrderID, body.AmountCents, body.Provider)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HandleDatabaseError(c, err, "create payment")
 		return
 	}
-	c.JSON(http.StatusCreated, p)
+
+	errors.RespondCreated(c, p)
 }
 
 // GetPayment godoc
@@ -56,19 +74,21 @@ func (h *PaymentHandler) GetPayment(c *gin.Context) {
 	restaurantID := getRestaurantIDFromContext(c)
 	id, err := parseUintParam(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		errors.RespondError(c, errors.NewValidation("invalid payment id"))
 		return
 	}
+
 	p, err := h.svc.GetPayment(c.Request.Context(), restaurantID, id)
 	if err != nil {
-		status := http.StatusInternalServerError
 		if err.Error() == "record not found" {
-			status = http.StatusNotFound
+			errors.HandleNotFoundError(c, "Payment")
+			return
 		}
-		c.JSON(status, gin.H{"error": err.Error()})
+		errors.HandleDatabaseError(c, err, "retrieve payment")
 		return
 	}
-	c.JSON(http.StatusOK, p)
+
+	errors.RespondOK(c, p)
 }
 
 // RequestRefund godoc
